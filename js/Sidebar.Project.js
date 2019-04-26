@@ -35,6 +35,20 @@ Sidebar.Project = function ( editor ) {
 
 	container.add( titleRow );
 
+	// Editor Url
+
+	var editorUrlRow = new UI.Row();
+	var editorUrl = new UI.Input( config.getKey( 'project/editorUrl' ) ).setLeft( '100px' ).onChange( function () {
+
+		config.setKey( 'project/editorUrl', this.getValue() );
+
+	} );
+
+	editorUrlRow.add( new UI.Text( '编辑器地址' ).setWidth( '90px' ) );
+	editorUrlRow.add( editorUrl );
+
+	container.add( editorUrlRow );
+
 	// Editable
 
 	var editableRow = new UI.Row();

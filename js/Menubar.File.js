@@ -297,7 +297,9 @@ Menubar.File = function ( editor ) {
 
 				editButton = `
 			var button = document.createElement( 'a' );
-			button.href = 'https://threejs.org/editor/#file=' + location.href.split( '/' ).slice( 0, - 1 ).join( '/' ) + '/app.json';
+			button.href = '`;
+				editButton += config.getKey( 'project/editorUrl' );
+				editButton += `#file=' + location.href.split( '/' ).slice( 0, - 1 ).join( '/' ) + '/app.json';
 			button.style.cssText = 'position: absolute; bottom: 20px; right: 20px; padding: 12px 14px; color: #fff; border: 1px solid #fff; border-radius: 4px; text-decoration: none;';
 			button.target = '_blank';
 			button.textContent = '编辑';
@@ -316,7 +318,7 @@ Menubar.File = function ( editor ) {
 			zip.file( 'js/app.js', content );
 
 		} );
-		loader.load( '../build/three.min.js', function ( content ) {
+		loader.load( 'common/build/three.min.js', function ( content ) {
 
 			zip.file( 'js/three.min.js', content );
 
@@ -324,7 +326,7 @@ Menubar.File = function ( editor ) {
 
 		if ( vr ) {
 
-			loader.load( '../examples/js/vr/WebVR.js', function ( content ) {
+			loader.load( 'common/js/vr/WebVR.js', function ( content ) {
 
 				zip.file( 'js/WebVR.js', content );
 

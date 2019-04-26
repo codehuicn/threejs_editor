@@ -10,6 +10,7 @@ var Config = function ( name ) {
 
 		'project/title': '',
 		'project/editable': false,
+		'project/editorUrl': 'https://threejs.org/editor/',
 
 		'project/renderer': 'WebGLRenderer',
 		'project/renderer/antialias': true,
