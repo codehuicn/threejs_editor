@@ -14,7 +14,7 @@ History = function ( editor ) {
 	this.historyDisabled = false;
 	this.config = editor.config;
 
-	//Set editor-reference in Command
+	// Set editor-reference in Command
 
 	Command( editor );
 
@@ -93,7 +93,7 @@ History.prototype = {
 
 		if ( this.historyDisabled ) {
 
-			alert( "Undo/Redo disabled while scene is playing." );
+			this.showHistoryDisabled();
 			return;
 
 		}
@@ -128,7 +128,7 @@ History.prototype = {
 
 		if ( this.historyDisabled ) {
 
-			alert( "Undo/Redo disabled while scene is playing." );
+			this.showHistoryDisabled();
 			return;
 
 		}
@@ -246,7 +246,7 @@ History.prototype = {
 
 		if ( this.historyDisabled ) {
 
-			alert( "Undo/Redo disabled while scene is playing." );
+			this.showHistoryDisabled();
 			return;
 
 		}
@@ -317,6 +317,12 @@ History.prototype = {
 		this.editor.signals.historyChanged.active = true;
 
 		this.goToState( id );
+
+	},
+
+	showHistoryDisabled: function () {
+
+		alert( "操作暂时不可用" );
 
 	}
 
