@@ -13,3 +13,5 @@
 * `Editor.js`项目主功能的函数。
 * `config.js`项目的配置，会保存到`localStorage`本地存储。
 * `History.js`项目的历史记录，撤销和重做的队列。
+* `Storage.js`项目的`indexedDB`本地数据库。
+* `Loader.js`项目的文件加载功能。

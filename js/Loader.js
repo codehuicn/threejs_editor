@@ -453,12 +453,16 @@ var Loader = function ( editor ) {
 
 			default:
 
-				alert( 'Unsupported file format (' + extension +  ').' );
+				this.showUnsupportedFormat( extension );
 
 				break;
 
 		}
 
+	};
+
+	this.showUnsupportedFormat = function ( format ) {
+		alert( '暂不支持的文件格式：' + format );
 	};
 
 	function handleJSON( data, file, filename ) {
