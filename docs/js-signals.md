@@ -19,7 +19,7 @@ myObject.started.remove(onStarted); //remove a single listener
 
 ```
 
-[JS-Signals Github](https://github.com/millermedeiros/js-signals)
-[JS-Signals Document](http://millermedeiros.github.io/js-signals/)
-[JS-Signals API](http://millermedeiros.github.io/js-signals/docs/index.html)
-[JS-Signals Examples](https://github.com/millermedeiros/js-signals/wiki/Examples)
+* [JS-Signals Github](https://github.com/millermedeiros/js-signals)
+* [JS-Signals Document](http://millermedeiros.github.io/js-signals/)
+* [JS-Signals API](http://millermedeiros.github.io/js-signals/docs/index.html)
+* [JS-Signals Examples](https://github.com/millermedeiros/js-signals/wiki/Examples)
