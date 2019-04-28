@@ -9,7 +9,7 @@ Sidebar.Script = function ( editor ) {
 	var container = new UI.Panel();
 	container.setDisplay( 'none' );
 
-	container.add( new UI.Text( 'Script' ).setTextTransform( 'uppercase' ) );
+	container.add( new UI.Text( '模型脚本' ).setTextTransform( 'uppercase' ) );
 	container.add( new UI.Break() );
 	container.add( new UI.Break() );
 

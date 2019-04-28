@@ -4,6 +4,8 @@
 
 var Api = function () {
 
+	this.version = '1.0.0';
+
 	this.urlData = {
 		baseUrl: 'http://localhost:3000/',
 		editorUrl: 'http://localhost:3000/threejs_editor/',

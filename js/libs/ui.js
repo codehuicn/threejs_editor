@@ -863,9 +863,9 @@ UI.Integer.prototype.setValue = function ( value ) {
 };
 
 UI.Integer.prototype.setStep = function ( step ) {
-	
-	this.step = parseInt( step ); 
-	
+
+	this.step = parseInt( step );
+
 	return this;
 
 };

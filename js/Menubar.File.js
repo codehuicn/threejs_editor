@@ -15,6 +15,7 @@ Menubar.File = function ( editor ) {
 	//
 
 	var config = editor.config;
+	var api = editor.api;
 
 	var container = new UI.Panel();
 	container.setClass( 'menu' );
@@ -298,7 +299,7 @@ Menubar.File = function ( editor ) {
 				editButton = `
 			var button = document.createElement( 'a' );
 			button.href = '`;
-				editButton += config.getKey( 'project/editorUrl' );
+				editButton += api.urlData.editorUrl;
 				editButton += `#file=' + location.href.split( '/' ).slice( 0, - 1 ).join( '/' ) + '/app.json';
 			button.style.cssText = 'position: absolute; bottom: 20px; right: 20px; padding: 12px 14px; color: #fff; border: 1px solid #fff; border-radius: 4px; text-decoration: none;';
 			button.target = '_blank';

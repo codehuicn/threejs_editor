@@ -4,10 +4,13 @@
 
 Menubar.Status = function ( editor ) {
 
+	var api = editor.api;
+
 	var container = new UI.Panel();
 	container.setClass( 'menu right' );
 
 	var autosave = new UI.THREE.Boolean( editor.config.getKey( 'autosave' ), '自动保存' );
+	autosave.checkbox.setPosition('relative').setTop('4px');
 	autosave.text.setColor( '#888' );
 	autosave.onChange( function () {
 
@@ -36,7 +39,7 @@ Menubar.Status = function ( editor ) {
 
 	} );
 
-	var version = new UI.Text( 'r' + THREE.REVISION );
+	var version = new UI.Text( 'v' + api.version );
 	version.setClass( 'title' );
 	version.setOpacity( 0.5 );
 	container.add( version );

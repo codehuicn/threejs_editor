@@ -7,6 +7,8 @@ Menubar.Help = function ( editor ) {
 	var container = new UI.Panel();
 	container.setClass( 'menu' );
 
+	return container;
+
 	var title = new UI.Panel();
 	title.setClass( 'title' );
 	title.setTextContent( '帮助' );

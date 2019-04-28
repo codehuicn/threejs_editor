@@ -13,11 +13,11 @@ Sidebar.History = function ( editor ) {
 
 	var container = new UI.Panel();
 
-	container.add( new UI.Text( 'HISTORY' ) );
+	container.add( new UI.Text( '历史记录' ) );
 
 	//
 
-	var persistent = new UI.THREE.Boolean( config.getKey( 'settings/history' ), 'persistent' );
+	var persistent = new UI.THREE.Boolean( config.getKey( 'settings/history' ), '保存' );
 	persistent.setPosition( 'absolute' ).setRight( '8px' );
 	persistent.onChange( function () {
 
@@ -27,7 +27,7 @@ Sidebar.History = function ( editor ) {
 
 		if ( value ) {
 
-			alert( 'The history will be preserved across sessions.\nThis can have an impact on performance when working with textures.' );
+			// alert( 'The history will be preserved across sessions.\nThis can have an impact on performance when working with textures.' );
 
 			var lastUndoCmd = history.undos[ history.undos.length - 1 ];
 			var lastUndoId = ( lastUndoCmd !== undefined ) ? lastUndoCmd.id : 0;
