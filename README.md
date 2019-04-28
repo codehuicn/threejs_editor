@@ -15,3 +15,4 @@
 * `History.js`项目的历史记录，撤销和重做的队列。
 * `Storage.js`项目的`indexedDB`本地数据库。
 * `Loader.js`项目的文件加载功能。
+* `Api.js`项目的后台数据获取功能。

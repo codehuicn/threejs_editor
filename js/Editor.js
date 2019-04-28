@@ -76,6 +76,7 @@ var Editor = function () {
 	this.history = new History( this );
 	this.storage = new Storage();
 	this.loader = new Loader( this );
+	this.api = new Api();
 
 	this.camera = this.DEFAULT_CAMERA.clone();
 
