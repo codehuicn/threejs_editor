@@ -36,6 +36,8 @@ var APP = {
 			this.setScene( loader.parse( json.scene ) );
 			this.setCamera( loader.parse( json.camera ) );
 
+			new THREE.EditorControls( camera, dom );
+
 			events = {
 				init: [],
 				start: [],

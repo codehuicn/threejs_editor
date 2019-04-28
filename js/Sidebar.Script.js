@@ -21,7 +21,7 @@ Sidebar.Script = function ( editor ) {
 	var newScript = new UI.Button( '新建' );
 	newScript.onClick( function () {
 
-		var script = { name: '', source: 'function update( event ) {}' };
+		var script = { name: '脚本名称', source: '// 提供了以下函数回调：\n// init -> start -> update -> stop \n// keydown keyup mousedown mousemove mouseup touchstart touchmove touchend \n// 每个函数回调都绑定了 this 为当前模型\n\nfunction update( event ) {}' };
 		editor.execute( new AddScriptCommand( editor.selected, script ) );
 
 	} );

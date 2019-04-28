@@ -323,6 +323,11 @@ Menubar.File = function ( editor ) {
 			zip.file( 'js/three.min.js', content );
 
 		} );
+		loader.load( 'common/js/controls/EditorControls.js', function ( content ) {
+
+			zip.file( 'js/EditorControls.js', content );
+
+		} );
 
 		if ( vr ) {
 
