@@ -81,6 +81,15 @@ var Toolbar = function ( editor ) {
 
 	}
 
+	// 定位相机
+
+	var locateCamera = new UI.THREE.Boolean( false, '定位相机' ).onChange( update );
+	buttons.add( locateCamera );
+
+	var locateHeight = new UI.Number( 1.6 ).setWidth( '40px' ).onChange( update );
+	buttons.add( new UI.Text( '相机高度: ' ) );
+	buttons.add( locateHeight );
+
 	return container;
 
 };
