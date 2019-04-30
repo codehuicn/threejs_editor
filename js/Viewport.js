@@ -19,15 +19,17 @@ var Viewport = function ( editor ) {
 	var camera = editor.camera;
 	var scene = editor.scene;
 	var sceneHelpers = editor.sceneHelpers;
+	var objectHelper = new ObjectHelper();
+	var textHelper = editor.textHelper;
 
 	var objects = [];
 
-	// helpers
+	// scene helper
 
 	var grid = new THREE.GridHelper( 60, 60 );
 	sceneHelpers.add( grid );
 
-	//
+	// object helper
 
 	var box = new THREE.Box3();
 
@@ -49,6 +51,7 @@ var Viewport = function ( editor ) {
 		if ( object !== undefined ) {
 
 			selectionBox.setFromObject( object );
+			objectHelper.refreshObjectHelper( object, scene, sceneHelpers, textHelper );
 
 			if ( editor.helpers[ object.id ] !== undefined ) {
 
@@ -119,7 +122,6 @@ var Viewport = function ( editor ) {
 		controls.enabled = true;
 
 	} );
-
 	sceneHelpers.add( transformControls );
 
 	// object picking
@@ -298,7 +300,7 @@ var Viewport = function ( editor ) {
 
 	} );
 
-	signals.snapChanged.add( function ( dist ) {  
+	signals.snapChanged.add( function ( dist ) {
 
 		transformControls.setTranslationSnap( dist );
 
@@ -347,6 +349,7 @@ var Viewport = function ( editor ) {
 
 		selectionBox.visible = false;
 		transformControls.detach();
+		objectHelper.clearObjectHelper( sceneHelpers );
 
 		if ( object !== null && object !== scene && object !== camera ) {
 

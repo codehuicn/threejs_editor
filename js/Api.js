@@ -1,10 +1,11 @@
 /**
- * @author hui / http://codehui.cn/
+ * @author codehuicn / https://github.com/codehuicn
  */
 
 var Api = function () {
 
-	this.version = '1.0.0';
+	this.version = '1.1.0';
+	this.threejsVersion = '0.104.0';
 
 	this.urlData = {
 		baseUrl: 'http://localhost:3000/',

@@ -77,6 +77,7 @@ var Editor = function () {
 	this.storage = new Storage();
 	this.loader = new Loader( this );
 	this.api = new Api();
+	this.textHelper = new ObjectHelper.Text();
 
 	this.camera = this.DEFAULT_CAMERA.clone();
 
