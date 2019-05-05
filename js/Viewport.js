@@ -63,7 +63,7 @@ var Viewport = function ( editor ) {
 
 		}
 
-		render();
+		// render();
 
 	} );
 	transformControls.addEventListener( 'mouseDown', function () {
@@ -128,6 +128,9 @@ var Viewport = function ( editor ) {
 
 	var raycaster = new THREE.Raycaster();
 	var mouse = new THREE.Vector2();
+	var cameraLocated = false;
+	var cameraHeight = 0;
+	var cameraVelocity = 1;
 
 	// events
 
@@ -137,7 +140,20 @@ var Viewport = function ( editor ) {
 
 		raycaster.setFromCamera( mouse, camera );
 
-		return raycaster.intersectObjects( objects );
+		var intersects = raycaster.intersectObjects( objects );
+
+		if ( intersects.length === 0 && cameraLocated ) {
+
+			// 定位相机
+
+			var plane = new THREE.Plane( new THREE.Vector3( 0, 1, 0 ), 0 );
+			var point = new THREE.Vector3();
+			raycaster.ray.intersectPlane( plane, point );
+			intersects = [ { point: point } ];
+
+		}
+
+		return intersects;
 
 	}
 
@@ -160,17 +176,34 @@ var Viewport = function ( editor ) {
 
 			if ( intersects.length > 0 ) {
 
-				var object = intersects[ 0 ].object;
+				if ( cameraLocated ) {
 
-				if ( object.userData.object !== undefined ) {
+					// 定位相机
 
-					// helper
+					intersects[ 0 ].point.setY( cameraHeight );
+					editor.camera.position.copy( intersects[ 0 ].point );
+					editor.camera.updateProjectionMatrix();
+					signals.cameraChanged.dispatch();
 
-					editor.select( object.userData.object );
+					pointerControls.lock();
 
 				} else {
 
-					editor.select( object );
+					// 选择模型
+
+					var object = intersects[ 0 ].object;
+
+					if ( object.userData.object !== undefined ) {
+
+						// helper
+
+						editor.select( object.userData.object );
+
+					} else {
+
+						editor.select( object );
+
+					}
 
 				}
 
@@ -180,7 +213,7 @@ var Viewport = function ( editor ) {
 
 			}
 
-			render();
+			// render();
 
 		}
 
@@ -264,12 +297,98 @@ var Viewport = function ( editor ) {
 
 	} );
 
+	// PointerLockControls
+
+	var pointerRaycaster = new THREE.Raycaster( new THREE.Vector3(), new THREE.Vector3( 0, - 1, 0 ), 0, 10 );
+
+	var moveForward = false;
+	var moveBackward = false;
+	var moveLeft = false;
+	var moveRight = false;
+	var canJump = false;
+
+	var prevTime = performance.now();
+	var velocity = new THREE.Vector3();
+	var direction = new THREE.Vector3();
+
+	var pointerControls = new THREE.PointerLockControls( camera, container.dom );
+
+	pointerControls.addEventListener( 'unlock', function () {
+
+		signals.cameraSetupLocated.dispatch( false );
+
+	} );
+
+	var onKeyDown = function ( event ) {
+
+		switch ( event.keyCode ) {
+
+			case 38: // up
+			case 87: // w
+				moveForward = true;
+				break;
+
+			case 37: // left
+			case 65: // a
+				moveLeft = true;
+				break;
+
+			case 40: // down
+			case 83: // s
+				moveBackward = true;
+				break;
+
+			case 39: // right
+			case 68: // d
+				moveRight = true;
+				break;
+
+			case 67: // c
+				if ( canJump === true ) velocity.y += cameraHeight * 10;
+				canJump = false;
+				break;
+
+		}
+
+	};
+
+	var onKeyUp = function ( event ) {
+
+		switch ( event.keyCode ) {
+
+			case 38: // up
+			case 87: // w
+				moveForward = false;
+				break;
+
+			case 37: // left
+			case 65: // a
+				moveLeft = false;
+				break;
+
+			case 40: // down
+			case 83: // s
+				moveBackward = false;
+				break;
+
+			case 39: // right
+			case 68: // d
+				moveRight = false;
+				break;
+
+		}
+
+	};
+
+	document.addEventListener( 'keydown', onKeyDown, false );
+	document.addEventListener( 'keyup', onKeyUp, false );
+
 	// signals
 
 	signals.editorCleared.add( function () {
 
 		controls.center.set( 0, 0, 0 );
-		render();
+		// render();
 
 	} );
 
@@ -290,7 +409,7 @@ var Viewport = function ( editor ) {
 
 		}
 
-		render();
+		// render();
 
 	} );
 
@@ -335,13 +454,30 @@ var Viewport = function ( editor ) {
 
 	signals.sceneGraphChanged.add( function () {
 
-		render();
+		// render();
 
 	} );
 
 	signals.cameraChanged.add( function () {
 
-		render();
+		// render();
+
+	} );
+
+	signals.cameraLocated.add( function ( located, height, velocity ) {
+
+		cameraLocated = located;
+		cameraHeight = height;
+		cameraVelocity = velocity;
+
+		controls.enabled = !located;
+
+	} );
+
+	signals.cameraSetupLocated.add( function ( located ) {
+
+		cameraLocated = located;
+		controls.enabled = !located;
 
 	} );
 
@@ -366,7 +502,7 @@ var Viewport = function ( editor ) {
 
 		}
 
-		render();
+		// render();
 
 	} );
 
@@ -384,7 +520,7 @@ var Viewport = function ( editor ) {
 
 		}
 
-		render();
+		// render();
 
 	} );
 
@@ -419,7 +555,7 @@ var Viewport = function ( editor ) {
 
 		}
 
-		render();
+		// render();
 
 	} );
 
@@ -447,7 +583,7 @@ var Viewport = function ( editor ) {
 
 	signals.materialChanged.add( function ( material ) {
 
-		render();
+		// render();
 
 	} );
 
@@ -457,7 +593,7 @@ var Viewport = function ( editor ) {
 
 		scene.background.setHex( backgroundColor );
 
-		render();
+		// render();
 
 	} );
 
@@ -498,7 +634,7 @@ var Viewport = function ( editor ) {
 
 		}
 
-		render();
+		// render();
 
 	} );
 
@@ -516,20 +652,69 @@ var Viewport = function ( editor ) {
 
 		renderer.setSize( container.dom.offsetWidth, container.dom.offsetHeight );
 
-		render();
+		// render();
 
 	} );
 
 	signals.showGridChanged.add( function ( showGrid ) {
 
 		grid.visible = showGrid;
-		render();
+		// render();
 
 	} );
 
 	//
 
 	function render() {
+
+		requestAnimationFrame( render );
+
+		if ( pointerControls.isLocked === true ) {
+
+			pointerRaycaster.ray.origin.copy( pointerControls.getObject().position );
+			pointerRaycaster.ray.origin.y -= cameraHeight;
+
+			var intersections = pointerRaycaster.intersectObjects( objects );
+
+			var onObject = intersections.length > 0;
+
+			var time = performance.now();
+			var delta = ( time - prevTime ) / 1000;
+
+			velocity.x -= velocity.x * 10.0 * delta;
+			velocity.z -= velocity.z * 10.0 * delta;
+
+			velocity.y -= 9.8 * 10.0 * delta; // 100.0 = mass
+
+			direction.z = Number( moveForward ) - Number( moveBackward );
+			direction.x = Number( moveLeft ) - Number( moveRight );
+			direction.normalize(); // this ensures consistent movements in all directions
+
+			if ( moveForward || moveBackward ) velocity.z -= direction.z * 40.0 * cameraVelocity * delta;
+			if ( moveLeft || moveRight ) velocity.x -= direction.x * 40.0 * cameraVelocity * delta;
+
+			if ( onObject === true ) {
+
+				velocity.y = Math.max( 0, velocity.y );
+				canJump = true;
+
+			}
+			pointerControls.getObject().translateX( velocity.x * delta );
+			pointerControls.getObject().position.y += ( velocity.y * delta ); // new behavior
+			pointerControls.getObject().translateZ( velocity.z * delta );
+
+			if ( pointerControls.getObject().position.y < cameraHeight ) {
+
+				velocity.y = 0;
+				pointerControls.getObject().position.y = cameraHeight;
+
+				canJump = true;
+
+			}
+
+			prevTime = time;
+
+		}
 
 		sceneHelpers.updateMatrixWorld();
 		scene.updateMatrixWorld();

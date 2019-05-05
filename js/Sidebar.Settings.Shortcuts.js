@@ -94,7 +94,7 @@ Sidebar.Settings.Shortcuts = function ( editor ) {
 
 				event.preventDefault(); // prevent browser back
 
-				// fall-through
+				break;
 
 			case 'delete':
 

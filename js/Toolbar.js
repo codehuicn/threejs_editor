@@ -60,12 +60,12 @@ var Toolbar = function ( editor ) {
 
 	// grid
 
+	var snap = new UI.THREE.Boolean( false, '按步长' ).onChange( update );
+	buttons.add( snap );
+
 	var grid = new UI.Number( 1 ).setWidth( '40px' ).onChange( update );
 	buttons.add( new UI.Text( '步长: ' ) );
 	buttons.add( grid );
-
-	var snap = new UI.THREE.Boolean( false, '按步长' ).onChange( update );
-	buttons.add( snap );
 
 	var local = new UI.THREE.Boolean( false, '本地坐标系' ).onChange( update );
 	buttons.add( local );
@@ -83,12 +83,28 @@ var Toolbar = function ( editor ) {
 
 	// 定位相机
 
-	var locateCamera = new UI.THREE.Boolean( false, '定位相机' ).onChange( update );
+	var locateCamera = new UI.THREE.Boolean( false, '定位相机' ).onChange( locate );
 	buttons.add( locateCamera );
 
-	var locateHeight = new UI.Number( 1.6 ).setWidth( '40px' ).onChange( update );
-	buttons.add( new UI.Text( '相机高度: ' ) );
+	var locateHeight = new UI.Number( 1.6 ).setWidth( '30px' ).onChange( locate );
+	buttons.add( new UI.Text( '高度: ' ) );
 	buttons.add( locateHeight );
+
+	var locateVelocity = new UI.Number( 1 ).setWidth( '40px' ).onChange( locate );
+	buttons.add( new UI.Text( '速度: ' ) );
+	buttons.add( locateVelocity );
+
+	function locate() {
+
+		signals.cameraLocated.dispatch( locateCamera.getValue(), locateHeight.getValue(), locateVelocity.getValue() );
+
+	}
+
+	signals.cameraSetupLocated.add( function ( val ) {
+
+		locateCamera.setValue( val );
+
+	} )
 
 	return container;
 

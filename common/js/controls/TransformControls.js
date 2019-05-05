@@ -938,8 +938,8 @@
 					scope.object.position.add( point );
 
 				}
-				
-				if ( scope.translationSnap !== null ) {  
+
+				if ( scope.translationSnap !== null ) {
 
 					if ( scope.space === "local" ) {
 
@@ -958,7 +958,7 @@
 					}
 
 				}
-				
+
 			} else if ( _mode === "scale" ) {
 
 				point.sub( offset );
