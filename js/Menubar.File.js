@@ -319,7 +319,7 @@ Menubar.File = function ( editor ) {
 			zip.file( 'js/app.js', content );
 
 		} );
-		loader.load( 'common/build/three.min.js', function ( content ) {
+		loader.load( 'common/build/three89.min.js', function ( content ) {
 
 			zip.file( 'js/three.min.js', content );
 
