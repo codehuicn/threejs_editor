@@ -74,13 +74,18 @@
 			function play( json ) {
 
 				playerData = json;
-				
+
 				player = new APP.Player();
 				player.load( json );
+
 				player.setSize( window.innerWidth, window.innerHeight );
+				player.setSizeMini( window.innerWidth * 0.2, window.innerHeight * 0.2 );
+
 				player.play();
 
 				document.body.insertBefore( player.dom, document.getElementById( 'buttons' ) );
+				document.body.insertBefore( player.domMini, document.getElementById( 'buttons' ) );
+				player.domMini.style.cssText = 'position: absolute; bottom: 0; left: 0; border: 1px solid #fff;';
 
 				var cameraRecord = player.getCameraRecord();
 
@@ -109,7 +114,10 @@
 				} );
 
 				window.addEventListener( 'resize', function () {
+
 					player.setSize( window.innerWidth, window.innerHeight );
+					player.setSizeMini( window.innerWidth * 0.2, window.innerHeight * 0.2 );
+
 				} );
 
 			}

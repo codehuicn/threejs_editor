@@ -7,18 +7,22 @@ var APP = {
 	Player: function () {
 
 		var loader = new THREE.ObjectLoader();
-		var camera, cameraRecord, scene, renderer;
+		var camera, cameraRecord, cameraHelper, cameraMini, scene, sceneMini, renderer, rendererMini;
 
 		var events = {};
 
 		var dom = document.createElement( 'div' );
 
+		var domMini = document.createElement( 'div' );
+
 		this.dom = dom;
+
+		this.domMini = domMini;
 
 		this.width = 500;
 		this.height = 500;
 
-		var controls;
+		var controls, controlsMini;
 
 		var moveForward = false;
 		var moveBackward = false;
@@ -39,6 +43,10 @@ var APP = {
 			renderer.setClearColor( 0x000000 );
 			renderer.setPixelRatio( window.devicePixelRatio );
 
+			rendererMini = new THREE.WebGLRenderer( { antialias: true } );
+			rendererMini.setClearColor( 0x000000 );
+			rendererMini.setPixelRatio( window.devicePixelRatio );
+
 			var project = json.project;
 
 			if ( project.gammaInput ) renderer.gammaInput = true;
@@ -48,9 +56,13 @@ var APP = {
 
 			dom.appendChild( renderer.domElement );
 
-			this.setScene( loader.parse( json.scene ) );
+			domMini.appendChild( rendererMini.domElement );
+
 			this.setCamera( loader.parse( json.camera ) );
+			this.setScene( loader.parse( json.scene ) );
+
 			cameraRecord = json.cameraRecord;
+			timeLen = cameraRecord.end - cameraRecord.start;
 
 			if ( cameraRecord && cameraRecord.cameraVelocity ) {
 
@@ -59,6 +71,9 @@ var APP = {
 			}
 
 			controls = new THREE.EditorControls( camera, dom );
+
+			controlsMini = new THREE.EditorControls( cameraMini, domMini );
+
 			pointerControls = new THREE.PointerLockControls( camera, dom );
 			pointerControls.addEventListener( 'unlock', function () {
 
@@ -147,11 +162,19 @@ var APP = {
 
 			}
 
+			cameraHelper = new THREE.CameraHelper( camera );
+			cameraMini = camera.clone();
+			cameraMini.far = 2000;
+			cameraMini.position.z = 500;
+			cameraMini.updateProjectionMatrix();
+
 		};
 
 		this.setScene = function ( value ) {
 
 			scene = value;
+			sceneMini = scene.clone();
+			sceneMini.add( cameraHelper );
 
 		};
 
@@ -170,6 +193,23 @@ var APP = {
 			if ( renderer ) {
 
 				renderer.setSize( width, height );
+
+			}
+
+		};
+
+		this.setSizeMini = function ( width, height ) {
+
+			if ( cameraMini ) {
+
+				cameraMini.aspect = this.width / this.height;
+				cameraMini.updateProjectionMatrix();
+
+			}
+
+			if ( rendererMini ) {
+
+				rendererMini.setSize( width, height );
 
 			}
 
@@ -253,6 +293,38 @@ var APP = {
 
 		}
 
+		function setCameraMove( key, val ) {
+
+			switch ( key.type ) {
+
+				case 'moveForward':
+					moveForward = val;
+					break;
+
+				case 'moveBackward':
+					moveBackward = val;
+					break;
+
+				case 'moveLeft':
+					moveLeft = val;
+					break;
+
+				case 'moveRight':
+					moveRight = val;
+					break;
+
+				case 'moveUp':
+					moveUp = val;
+					break;
+
+				case 'moveDown':
+					moveDown = val;
+					break;
+
+			}
+
+		}
+
 		function resetCameraKey() {
 
 			moveForward = false;
@@ -264,7 +336,7 @@ var APP = {
 
 		}
 
-		var startCamera, timeoutStart = [], timeoutEnd = [], timeInterval, timeoutStop;
+		var startCamera, timeoutStart = [], timeoutEnd = [], timeInterval, timeoutStop, playDom;
 
 		this.playCamera = function ( dom ) {
 
@@ -275,33 +347,12 @@ var APP = {
 
 			}
 
-			var keys = cameraRecord.keys;
-			var timeLen = cameraRecord.end - cameraRecord.start, timeNow = 0;
-
 			controls.enabled = false;
 			cameraPlaying = true;
 			camera.position.copy( cameraRecord.cameraLocated );
 			startCamera = performance.now();
 
-			for ( var i = 0, il = keys.length; i < il; i++ ) {
-
-				timeoutStart[i] = setTimeout( setCameraKey( keys[i], true ), keys[i].start - cameraRecord.start );
-				timeoutEnd[i] = setTimeout( setCameraKey( keys[i], false ), keys[i].end - cameraRecord.start );
-
-			}
-
-			timeInterval = setInterval( function () {
-
-				timeNow = performance.now() - startCamera;
-				dom.innerHTML = '停止（' + (timeNow/1000).toFixed(1) + '/' + (timeLen/1000).toFixed(1) + '）'
-
-			}, 100 );
-
-			timeoutStop = setTimeout( function () {
-
-				this.stopCamera( dom )
-
-			}.bind(this), timeLen );
+			playDom = dom;
 
 		}
 
@@ -310,16 +361,8 @@ var APP = {
 			controls.enabled = true;
 			cameraPlaying = false;
 			resetCameraKey();
+			lookIndex = 0;
 
-			for ( var i = 0, il = timeoutStart.length; i < il; i++ ) {
-
-				clearTimeout( timeoutStart[i] );
-				clearTimeout( timeoutEnd[i] );
-
-			}
-
-			clearInterval( timeInterval );
-			clearTimeout( timeoutStop );
 			dom.innerHTML = '播放';
 
 		}
@@ -336,13 +379,64 @@ var APP = {
 
 		}
 
-		var prevTime, lookAt = new THREE.Vector3(), lookIndex = 0;
+		var prevTime, lookAt = new THREE.Vector3(), lookIndex = 0, that = this, timeLen;
 
 		function animate( time ) {
 
-			// position
+			if ( cameraPlaying ) {
 
-			if ( pointerControls.isLocked === true || cameraPlaying === true ) {
+				// lookat
+
+				if ( lookIndex < cameraRecord.looksCount ) {
+
+					var cameraTime = cameraRecord.looks[ lookIndex * 4 ] - cameraRecord.start;
+
+					while ( cameraTime < ( time - startCamera + 10 ) ) {
+
+						lookIndex++;
+						cameraTime = cameraRecord.looks[ lookIndex * 4 ] - cameraRecord.start;
+
+					}
+					lookIndex > 0 ? lookIndex-- : '';
+
+					lookAt.set( cameraRecord.looks[ lookIndex * 4 + 1 ], cameraRecord.looks[ lookIndex * 4 + 2 ], cameraRecord.looks[ lookIndex * 4 + 3 ] );
+					lookAt.add( camera.position );
+					camera.lookAt( lookAt );
+
+					lookIndex++;
+
+					timeNow = time - startCamera;
+					playDom.innerHTML = '停止（' + (timeNow/1000).toFixed(1) + '/' + (timeLen/1000).toFixed(1) + '）';
+
+				} else {
+
+					that.stopCamera( playDom );
+
+				}
+
+				// position
+
+				for ( var i = 0, il = cameraRecord.keys.length; i < il; i++ ) {
+
+					if ( time - startCamera < cameraRecord.keys[i]['start'] - cameraRecord.start ) {
+
+						break;
+
+					} else if ( time - startCamera < cameraRecord.keys[i]['end'] - cameraRecord.start ) {
+
+						setCameraMove( cameraRecord.keys[i], true );
+
+					} else {
+
+						setCameraMove( cameraRecord.keys[i], false );
+
+					}
+
+				}
+
+			}
+
+			if ( pointerControls.isLocked || cameraPlaying ) {
 
 				var delta = ( time - prevTime ) / 1000;
 
@@ -365,28 +459,6 @@ var APP = {
 
 			}
 
-			// lookat
-
-			if ( cameraPlaying && lookIndex < cameraRecord.looksCount ) {
-
-				var cameraTime = cameraRecord.looks[ lookIndex * 4 ] - cameraRecord.start;
-
-				while ( cameraTime < ( time - startCamera + 10 ) ) {
-
-					lookIndex++;
-					cameraTime = cameraRecord.looks[ lookIndex * 4 ] - cameraRecord.start;
-
-				}
-				lookIndex--;
-
-				lookAt.set( cameraRecord.looks[ lookIndex * 4 + 1 ], cameraRecord.looks[ lookIndex * 4 + 2 ], cameraRecord.looks[ lookIndex * 4 + 3 ] );
-				lookAt.add( camera.position );
-				camera.lookAt( lookAt );
-
-				lookIndex++;
-
-			}
-
 			try {
 
 				dispatch( events.update, { time: time, delta: time - prevTime } );
@@ -398,6 +470,7 @@ var APP = {
 			}
 
 			renderer.render( scene, camera );
+			rendererMini.render( sceneMini, cameraMini );
 
 			prevTime = time;
 
@@ -449,12 +522,18 @@ var APP = {
 
 			renderer.dispose();
 
+			rendererMini.dispose();
+
 			controls = undefined;
 			pointerControls = undefined;
 
 			camera = undefined;
 			scene = undefined;
 			renderer = undefined;
+
+			cameraMini = undefined;
+			sceneMini = undefined;
+			rendererMini = undefined;
 
 		};
 

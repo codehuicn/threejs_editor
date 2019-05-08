@@ -13,16 +13,14 @@ THREE.EditorControls = function ( object, domElement ) {
 
 	this.enabled = true;
 	this.center = new THREE.Vector3();
-	this.panSpeed = 0.002;
-	this.zoomSpeed = 0.1;
+	this.panSpeed = 0.001;
+	this.zoomSpeed = 0.001;
 	this.rotationSpeed = 0.005;
 
 	// internals
 
 	var scope = this;
 	var vector = new THREE.Vector3();
-	var delta = new THREE.Vector3();
-	var box = new THREE.Box3();
 
 	var STATE = { NONE: - 1, ROTATE: 0, ZOOM: 1, PAN: 2 };
 	var state = STATE.NONE;
@@ -32,7 +30,6 @@ THREE.EditorControls = function ( object, domElement ) {
 	var pointer = new THREE.Vector2();
 	var pointerOld = new THREE.Vector2();
 	var spherical = new THREE.Spherical();
-	var sphere = new THREE.Sphere();
 
 	// events
 
@@ -40,30 +37,8 @@ THREE.EditorControls = function ( object, domElement ) {
 
 	this.focus = function ( target ) {
 
-		var distance;
-
-		box.setFromObject( target );
-
-		if ( box.isEmpty() === false ) {
-
-			box.getCenter( center );
-			distance = box.getBoundingSphere( sphere ).radius;
-
-		} else {
-
-			// Focusing on an Group, AmbientLight, etc
-
-			center.setFromMatrixPosition( target.matrixWorld );
-			distance = 0.1;
-
-		}
-
-		delta.set( 0, 0, 1 );
-		delta.applyQuaternion( object.quaternion );
-		delta.multiplyScalar( distance * 4 );
-
-		object.position.copy( center ).add( delta );
-
+		var box = new THREE.Box3().setFromObject( target );
+		object.lookAt( center.copy( box.getCenter() ) );
 		scope.dispatchEvent( changeEvent );
 
 	};
@@ -104,8 +79,8 @@ THREE.EditorControls = function ( object, domElement ) {
 
 		spherical.setFromVector3( vector );
 
-		spherical.theta += delta.x * scope.rotationSpeed;
-		spherical.phi += delta.y * scope.rotationSpeed;
+		spherical.theta += delta.x;
+		spherical.phi += delta.y;
 
 		spherical.makeSafe();
 
@@ -159,15 +134,15 @@ THREE.EditorControls = function ( object, domElement ) {
 
 		if ( state === STATE.ROTATE ) {
 
-			scope.rotate( delta.set( - movementX, - movementY, 0 ) );
+			scope.rotate( new THREE.Vector3( - movementX * scope.rotationSpeed, - movementY * scope.rotationSpeed, 0 ) );
 
 		} else if ( state === STATE.ZOOM ) {
 
-			scope.zoom( delta.set( 0, 0, movementY ) );
+			scope.zoom( new THREE.Vector3( 0, 0, movementY ) );
 
 		} else if ( state === STATE.PAN ) {
 
-			scope.pan( delta.set( - movementX, movementY, 0 ) );
+			scope.pan( new THREE.Vector3( - movementX, movementY, 0 ) );
 
 		}
 
@@ -190,8 +165,9 @@ THREE.EditorControls = function ( object, domElement ) {
 
 		event.preventDefault();
 
-		// Normalize deltaY due to https://bugzilla.mozilla.org/show_bug.cgi?id=1392460
-		scope.zoom( delta.set( 0, 0, event.deltaY > 0 ? 1 : - 1 ) );
+		if ( scope.enabled === false ) return;
+
+		scope.zoom( new THREE.Vector3( 0, 0, event.deltaY ) );
 
 	}
 
@@ -201,7 +177,7 @@ THREE.EditorControls = function ( object, domElement ) {
 
 	}
 
-	this.dispose = function () {
+	this.dispose = function() {
 
 		domElement.removeEventListener( 'contextmenu', contextmenu, false );
 		domElement.removeEventListener( 'mousedown', onMouseDown, false );
@@ -235,13 +211,13 @@ THREE.EditorControls = function ( object, domElement ) {
 		switch ( event.touches.length ) {
 
 			case 1:
-				touches[ 0 ].set( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY, 0 ).divideScalar( window.devicePixelRatio );
-				touches[ 1 ].set( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY, 0 ).divideScalar( window.devicePixelRatio );
+				touches[ 0 ].set( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY, 0 );
+				touches[ 1 ].set( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY, 0 );
 				break;
 
 			case 2:
-				touches[ 0 ].set( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY, 0 ).divideScalar( window.devicePixelRatio );
-				touches[ 1 ].set( event.touches[ 1 ].pageX, event.touches[ 1 ].pageY, 0 ).divideScalar( window.devicePixelRatio );
+				touches[ 0 ].set( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY, 0 );
+				touches[ 1 ].set( event.touches[ 1 ].pageX, event.touches[ 1 ].pageY, 0 );
 				prevDistance = touches[ 0 ].distanceTo( touches[ 1 ] );
 				break;
 
@@ -277,16 +253,16 @@ THREE.EditorControls = function ( object, domElement ) {
 		switch ( event.touches.length ) {
 
 			case 1:
-				touches[ 0 ].set( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY, 0 ).divideScalar( window.devicePixelRatio );
-				touches[ 1 ].set( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY, 0 ).divideScalar( window.devicePixelRatio );
-				scope.rotate( touches[ 0 ].sub( getClosest( touches[ 0 ], prevTouches ) ).multiplyScalar( - 1 ) );
+				touches[ 0 ].set( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY, 0 );
+				touches[ 1 ].set( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY, 0 );
+				scope.rotate( touches[ 0 ].sub( getClosest( touches[ 0 ], prevTouches ) ).multiplyScalar( - scope.rotationSpeed ) );
 				break;
 
 			case 2:
-				touches[ 0 ].set( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY, 0 ).divideScalar( window.devicePixelRatio );
-				touches[ 1 ].set( event.touches[ 1 ].pageX, event.touches[ 1 ].pageY, 0 ).divideScalar( window.devicePixelRatio );
+				touches[ 0 ].set( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY, 0 );
+				touches[ 1 ].set( event.touches[ 1 ].pageX, event.touches[ 1 ].pageY, 0 );
 				var distance = touches[ 0 ].distanceTo( touches[ 1 ] );
-				scope.zoom( delta.set( 0, 0, prevDistance - distance ) );
+				scope.zoom( new THREE.Vector3( 0, 0, prevDistance - distance ) );
 				prevDistance = distance;
 
 
@@ -295,7 +271,7 @@ THREE.EditorControls = function ( object, domElement ) {
 				offset0.x = - offset0.x;
 				offset1.x = - offset1.x;
 
-				scope.pan( offset0.add( offset1 ) );
+				scope.pan( offset0.add( offset1 ).multiplyScalar( 0.5 ) );
 
 				break;
 
