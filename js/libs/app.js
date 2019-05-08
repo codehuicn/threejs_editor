@@ -64,12 +64,6 @@ var APP = {
 			cameraRecord = json.cameraRecord;
 			timeLen = cameraRecord.end - cameraRecord.start;
 
-			if ( cameraRecord && cameraRecord.cameraVelocity ) {
-
-				cameraVelocity = cameraRecord.cameraVelocity;
-
-			}
-
 			controls = new THREE.EditorControls( camera, dom );
 
 			controlsMini = new THREE.EditorControls( cameraMini, domMini );
@@ -349,7 +343,6 @@ var APP = {
 
 			controls.enabled = false;
 			cameraPlaying = true;
-			camera.position.copy( cameraRecord.cameraLocated );
 			startCamera = performance.now();
 
 			playDom = dom;
@@ -385,8 +378,6 @@ var APP = {
 
 			if ( cameraPlaying ) {
 
-				// lookat
-
 				if ( lookIndex < cameraRecord.looksCount ) {
 
 					var cameraTime = cameraRecord.looks[ lookIndex * 4 ] - cameraRecord.start;
@@ -403,6 +394,8 @@ var APP = {
 					lookAt.add( camera.position );
 					camera.lookAt( lookAt );
 
+					camera.position.set( cameraRecord.moves[ lookIndex * 3 ], cameraRecord.moves[ lookIndex * 3 + 1 ], cameraRecord.moves[ lookIndex * 3 + 2 ] );
+
 					lookIndex++;
 
 					timeNow = time - startCamera;
@@ -414,29 +407,9 @@ var APP = {
 
 				}
 
-				// position
-
-				for ( var i = 0, il = cameraRecord.keys.length; i < il; i++ ) {
-
-					if ( time - startCamera < cameraRecord.keys[i]['start'] - cameraRecord.start ) {
-
-						break;
-
-					} else if ( time - startCamera < cameraRecord.keys[i]['end'] - cameraRecord.start ) {
-
-						setCameraMove( cameraRecord.keys[i], true );
-
-					} else {
-
-						setCameraMove( cameraRecord.keys[i], false );
-
-					}
-
-				}
-
 			}
 
-			if ( pointerControls.isLocked || cameraPlaying ) {
+			if ( pointerControls.isLocked ) {
 
 				var delta = ( time - prevTime ) / 1000;
 

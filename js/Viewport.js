@@ -187,11 +187,8 @@ var Viewport = function ( editor ) {
 					signals.cameraChanged.dispatch();
 
 					pointerControls.lock();
-					cameraRecord.cameraHeight = cameraHeight;
-					cameraRecord.cameraVelocity = cameraVelocity;
-					cameraRecord.cameraLocated.copy( intersects[ 0 ].point );
-					cameraRecord.keys = [];
 					cameraRecord.looks = [];
+					cameraRecord.moves = [];
 					cameraRecord.looksCount = 0;
 					cameraRecord.start = performance.now();
 
@@ -331,59 +328,13 @@ var Viewport = function ( editor ) {
 	} );
 
 	var cameraRecord = {
-		keys: [],
 		looks: [],
 		looksCount: 0,
 		looksSize: 4, // time, x, y, z
+		moves: [],
+		movesSize: 3, // x, y, z
 		start: 111111,
 		end: 11111222,
-		cameraHeight: 1.6,
-		cameraVelocity: 1,
-		cameraLocated: new THREE.Vector3()
-	};
-
-	var CameraKey = function () {
-
-		this.key = {
-			type: 'moveLeft',
-			start: 110110110,
-			end: 220220220,
-			lookStart: new THREE.Vector3(),
-			lookEnd: new THREE.Vector3()
-		};
-
-	}
-
-	CameraKey.prototype.keyDown = function ( type ) {
-
-		this.key.type = type;
-		this.key.start = performance.now();
-		camera.getWorldDirection( this.key.lookStart );
-
-	}
-
-	CameraKey.prototype.keyUp = function () {
-
-		this.key.end = performance.now();
-		camera.getWorldDirection( this.key.lookEnd );
-
-		cameraRecord.keys.push( {
-			type: this.key.type,
-			start: this.key.start,
-			end: this.key.end,
-			lookStart: this.key.lookStart.clone(),
-			lookEnd: this.key.lookEnd.clone()
-		} );
-
-	}
-
-	var cameraKey = {
-		moveForward: new CameraKey(),
-		moveLeft: new CameraKey(),
-		moveBackward: new CameraKey(),
-		moveRight: new CameraKey(),
-		moveUp: new CameraKey(),
-		moveDown: new CameraKey(),
 	};
 
 	var onKeyDown = function ( event ) {
@@ -393,35 +344,29 @@ var Viewport = function ( editor ) {
 			case 38: // up
 			case 87: // w
 				moveForward = true;
-				cameraKey.moveForward.keyDown( 'moveForward' );
 				break;
 
 			case 37: // left
 			case 65: // a
 				moveLeft = true;
-				cameraKey.moveLeft.keyDown( 'moveLeft' );
 				break;
 
 			case 40: // down
 			case 83: // s
 				moveBackward = true;
-				cameraKey.moveBackward.keyDown( 'moveBackward' );
 				break;
 
 			case 39: // right
 			case 68: // d
 				moveRight = true;
-				cameraKey.moveRight.keyDown( 'moveRight' );
 				break;
 
 			case 67: // c
 				moveUp = true;
-				cameraKey.moveUp.keyDown( 'moveUp' );
 				break;
 
 			case 88: // x
 				moveDown = true;
-				cameraKey.moveDown.keyDown( 'moveDown' );
 				break;
 
 		}
@@ -435,35 +380,29 @@ var Viewport = function ( editor ) {
 			case 38: // up
 			case 87: // w
 				moveForward = false;
-				cameraKey.moveForward.keyUp();
 				break;
 
 			case 37: // left
 			case 65: // a
 				moveLeft = false;
-				cameraKey.moveLeft.keyUp();
 				break;
 
 			case 40: // down
 			case 83: // s
 				moveBackward = false;
-				cameraKey.moveBackward.keyUp();
 				break;
 
 			case 39: // right
 			case 68: // d
 				moveRight = false;
-				cameraKey.moveRight.keyUp();
 				break;
 
 			case 67: // c
 				moveUp = false;
-				cameraKey.moveUp.keyUp();
 				break;
 
 			case 88: // x
 				moveDown = false;
-				cameraKey.moveDown.keyUp();
 				break;
 
 		}
@@ -774,6 +713,11 @@ var Viewport = function ( editor ) {
 				cameraRecord.looks.push( lookRender.y );
 				cameraRecord.looks.push( lookRender.z );
 				cameraRecord.looksCount++;
+
+				lookRender.copy( camera.position );
+				cameraRecord.moves.push( lookRender.x );
+				cameraRecord.moves.push( lookRender.y );
+				cameraRecord.moves.push( lookRender.z );
 
 			}
 
