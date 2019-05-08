@@ -79,9 +79,9 @@ var Editor = function () {
 	this.storage = new Storage();
 	this.loader = new Loader( this );
 	this.api = new Api();
-	this.textHelper = new ObjectHelper.Text();
 
 	this.camera = this.DEFAULT_CAMERA.clone();
+	this.cameraRecord = {};
 
 	this.scene = new THREE.Scene();
 	this.scene.name = 'Scene';
@@ -94,6 +94,7 @@ var Editor = function () {
 	this.materials = {};
 	this.textures = {};
 	this.scripts = {};
+	this.textHelper = new ObjectHelper.Text();
 
 	this.selected = null;
 	this.helpers = {};
@@ -488,6 +489,7 @@ Editor.prototype = {
 		this.camera.copy( camera );
 		this.camera.aspect = this.DEFAULT_CAMERA.aspect;
 		this.camera.updateProjectionMatrix();
+		this.cameraRecord = json.cameraRecord;
 
 		this.history.fromJSON( json.history );
 		this.scripts = json.scripts;
@@ -527,6 +529,7 @@ Editor.prototype = {
 				vr: this.config.getKey( 'project/vr' )
 			},
 			camera: this.camera.toJSON(),
+			cameraRecord: this.cameraRecord,
 			scene: this.scene.toJSON(),
 			scripts: this.scripts,
 			history: this.history.toJSON()

@@ -180,12 +180,20 @@ var Viewport = function ( editor ) {
 
 					// 定位相机
 
+					if ( pointerControls.isLocked ) return;
+
 					intersects[ 0 ].point.setY( cameraHeight );
 					editor.camera.position.copy( intersects[ 0 ].point );
-					editor.camera.updateProjectionMatrix();
 					signals.cameraChanged.dispatch();
 
 					pointerControls.lock();
+					cameraRecord.cameraHeight = cameraHeight;
+					cameraRecord.cameraVelocity = cameraVelocity;
+					cameraRecord.cameraLocated.copy( intersects[ 0 ].point );
+					cameraRecord.keys = [];
+					cameraRecord.looks = [];
+					cameraRecord.looksCount = 0;
+					cameraRecord.start = performance.now();
 
 				} else {
 
@@ -299,13 +307,12 @@ var Viewport = function ( editor ) {
 
 	// PointerLockControls
 
-	var pointerRaycaster = new THREE.Raycaster( new THREE.Vector3(), new THREE.Vector3( 0, - 1, 0 ), 0, 10 );
-
 	var moveForward = false;
 	var moveBackward = false;
 	var moveLeft = false;
 	var moveRight = false;
-	var canJump = false;
+	var moveUp = false;
+	var moveDown = false;
 
 	var prevTime = performance.now();
 	var velocity = new THREE.Vector3();
@@ -315,9 +322,69 @@ var Viewport = function ( editor ) {
 
 	pointerControls.addEventListener( 'unlock', function () {
 
+		cameraRecord.end = performance.now();
+
+		editor.cameraRecord = {};
+		editor.cameraRecord = cameraRecord;
 		signals.cameraSetupLocated.dispatch( false );
 
 	} );
+
+	var cameraRecord = {
+		keys: [],
+		looks: [],
+		looksCount: 0,
+		looksSize: 4, // time, x, y, z
+		start: 111111,
+		end: 11111222,
+		cameraHeight: 1.6,
+		cameraVelocity: 1,
+		cameraLocated: new THREE.Vector3()
+	};
+
+	var CameraKey = function () {
+
+		this.key = {
+			type: 'moveLeft',
+			start: 110110110,
+			end: 220220220,
+			lookStart: new THREE.Vector3(),
+			lookEnd: new THREE.Vector3()
+		};
+
+	}
+
+	CameraKey.prototype.keyDown = function ( type ) {
+
+		this.key.type = type;
+		this.key.start = performance.now();
+		camera.getWorldDirection( this.key.lookStart );
+
+	}
+
+	CameraKey.prototype.keyUp = function () {
+
+		this.key.end = performance.now();
+		camera.getWorldDirection( this.key.lookEnd );
+
+		cameraRecord.keys.push( {
+			type: this.key.type,
+			start: this.key.start,
+			end: this.key.end,
+			lookStart: this.key.lookStart.clone(),
+			lookEnd: this.key.lookEnd.clone()
+		} );
+
+	}
+
+	var cameraKey = {
+		moveForward: new CameraKey(),
+		moveLeft: new CameraKey(),
+		moveBackward: new CameraKey(),
+		moveRight: new CameraKey(),
+		moveUp: new CameraKey(),
+		moveDown: new CameraKey(),
+	};
 
 	var onKeyDown = function ( event ) {
 
@@ -326,26 +393,35 @@ var Viewport = function ( editor ) {
 			case 38: // up
 			case 87: // w
 				moveForward = true;
+				cameraKey.moveForward.keyDown( 'moveForward' );
 				break;
 
 			case 37: // left
 			case 65: // a
 				moveLeft = true;
+				cameraKey.moveLeft.keyDown( 'moveLeft' );
 				break;
 
 			case 40: // down
 			case 83: // s
 				moveBackward = true;
+				cameraKey.moveBackward.keyDown( 'moveBackward' );
 				break;
 
 			case 39: // right
 			case 68: // d
 				moveRight = true;
+				cameraKey.moveRight.keyDown( 'moveRight' );
 				break;
 
 			case 67: // c
-				if ( canJump === true ) velocity.y += cameraHeight * 10;
-				canJump = false;
+				moveUp = true;
+				cameraKey.moveUp.keyDown( 'moveUp' );
+				break;
+
+			case 88: // x
+				moveDown = true;
+				cameraKey.moveDown.keyDown( 'moveDown' );
 				break;
 
 		}
@@ -359,21 +435,35 @@ var Viewport = function ( editor ) {
 			case 38: // up
 			case 87: // w
 				moveForward = false;
+				cameraKey.moveForward.keyUp();
 				break;
 
 			case 37: // left
 			case 65: // a
 				moveLeft = false;
+				cameraKey.moveLeft.keyUp();
 				break;
 
 			case 40: // down
 			case 83: // s
 				moveBackward = false;
+				cameraKey.moveBackward.keyUp();
 				break;
 
 			case 39: // right
 			case 68: // d
 				moveRight = false;
+				cameraKey.moveRight.keyUp();
+				break;
+
+			case 67: // c
+				moveUp = false;
+				cameraKey.moveUp.keyUp();
+				break;
+
+			case 88: // x
+				moveDown = false;
+				cameraKey.moveDown.keyUp();
 				break;
 
 		}
@@ -665,52 +755,44 @@ var Viewport = function ( editor ) {
 
 	//
 
+	var lookRender = new THREE.Vector3();
+
 	function render() {
 
 		requestAnimationFrame( render );
 
 		if ( pointerControls.isLocked === true ) {
 
-			pointerRaycaster.ray.origin.copy( pointerControls.getObject().position );
-			pointerRaycaster.ray.origin.y -= cameraHeight;
-
-			var intersections = pointerRaycaster.intersectObjects( objects );
-
-			var onObject = intersections.length > 0;
-
 			var time = performance.now();
 			var delta = ( time - prevTime ) / 1000;
 
+			if ( delta > 0.01 ) {
+
+				camera.getWorldDirection( lookRender );
+				cameraRecord.looks.push( time );
+				cameraRecord.looks.push( lookRender.x );
+				cameraRecord.looks.push( lookRender.y );
+				cameraRecord.looks.push( lookRender.z );
+				cameraRecord.looksCount++;
+
+			}
+
 			velocity.x -= velocity.x * 10.0 * delta;
 			velocity.z -= velocity.z * 10.0 * delta;
-
-			velocity.y -= 9.8 * 10.0 * delta; // 100.0 = mass
+			velocity.y -= velocity.y * 10.0 * delta;
 
 			direction.z = Number( moveForward ) - Number( moveBackward );
 			direction.x = Number( moveLeft ) - Number( moveRight );
+			direction.y = Number( moveDown ) - Number( moveUp );
 			direction.normalize(); // this ensures consistent movements in all directions
 
 			if ( moveForward || moveBackward ) velocity.z -= direction.z * 40.0 * cameraVelocity * delta;
 			if ( moveLeft || moveRight ) velocity.x -= direction.x * 40.0 * cameraVelocity * delta;
+			if ( moveUp || moveDown ) velocity.y -= direction.y * 40.0 * cameraVelocity * delta;
 
-			if ( onObject === true ) {
-
-				velocity.y = Math.max( 0, velocity.y );
-				canJump = true;
-
-			}
 			pointerControls.getObject().translateX( velocity.x * delta );
-			pointerControls.getObject().position.y += ( velocity.y * delta ); // new behavior
+			pointerControls.getObject().translateY( velocity.y * delta );
 			pointerControls.getObject().translateZ( velocity.z * delta );
-
-			if ( pointerControls.getObject().position.y < cameraHeight ) {
-
-				velocity.y = 0;
-				pointerControls.getObject().position.y = cameraHeight;
-
-				canJump = true;
-
-			}
 
 			prevTime = time;
 

@@ -4,7 +4,7 @@
 
 var Api = function () {
 
-	this.version = '1.2.1';
+	this.version = '1.3.0';
 	this.threejsVersion = '0.104.0';
 
 	this.urlData = {

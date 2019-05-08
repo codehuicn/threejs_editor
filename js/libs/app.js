@@ -7,7 +7,7 @@ var APP = {
 	Player: function () {
 
 		var loader = new THREE.ObjectLoader();
-		var camera, scene, renderer;
+		var camera, cameraRecord, scene, renderer;
 
 		var events = {};
 
@@ -17,6 +17,21 @@ var APP = {
 
 		this.width = 500;
 		this.height = 500;
+
+		var controls;
+
+		var moveForward = false;
+		var moveBackward = false;
+		var moveLeft = false;
+		var moveRight = false;
+		var moveUp = false;
+		var moveDown = false;
+
+		var velocity = new THREE.Vector3();
+		var cameraVelocity = 1;
+		var direction = new THREE.Vector3();
+
+		var pointerControls, cameraPlaying = false;
 
 		this.load = function ( json ) {
 
@@ -35,8 +50,21 @@ var APP = {
 
 			this.setScene( loader.parse( json.scene ) );
 			this.setCamera( loader.parse( json.camera ) );
+			cameraRecord = json.cameraRecord;
 
-			new THREE.EditorControls( camera, dom );
+			if ( cameraRecord && cameraRecord.cameraVelocity ) {
+
+				cameraVelocity = cameraRecord.cameraVelocity;
+
+			}
+
+			controls = new THREE.EditorControls( camera, dom );
+			pointerControls = new THREE.PointerLockControls( camera, dom );
+			pointerControls.addEventListener( 'unlock', function () {
+
+				this.changeControls();
+
+			}.bind(this) );
 
 			events = {
 				init: [],
@@ -147,6 +175,157 @@ var APP = {
 
 		};
 
+		// 切换按钮
+
+		this.changeControls = function () {
+
+			if ( controls.enabled ) {
+				controls.enabled = false;
+				pointerControls.lock();
+			} else {
+				controls.enabled = true;
+			}
+
+		}
+
+		// 播放按钮
+
+		this.getCameraRecord = function () {
+
+			return cameraRecord;
+
+		}
+
+		this.getCameraPlaying = function () {
+
+			return cameraPlaying;
+
+		}
+
+		function setCameraKey( key, val ) {
+
+			return function () {
+
+				switch ( key.type ) {
+
+					case 'moveForward':
+						moveForward = val;
+						break;
+
+					case 'moveBackward':
+						moveBackward = val;
+						break;
+
+					case 'moveLeft':
+						moveLeft = val;
+						break;
+
+					case 'moveRight':
+						moveRight = val;
+						break;
+
+					case 'moveUp':
+						moveUp = val;
+						break;
+
+					case 'moveDown':
+						moveDown = val;
+						break;
+
+				}
+
+				var lookAt = new THREE.Vector3();
+
+				if ( val ) {
+
+					lookAt.set( key.lookStart.x, key.lookStart.y, key.lookStart.z );
+
+				} else {
+
+					lookAt.set( key.lookEnd.x, key.lookEnd.y, key.lookEnd.z );
+
+				}
+
+				lookAt.add( camera.position );
+				camera.lookAt( lookAt );
+
+			};
+
+		}
+
+		function resetCameraKey() {
+
+			moveForward = false;
+			moveBackward = false;
+			moveLeft = false;
+			moveRight = false;
+			moveUp = false;
+			moveDown = false;
+
+		}
+
+		var startCamera, timeoutStart = [], timeoutEnd = [], timeInterval, timeoutStop;
+
+		this.playCamera = function ( dom ) {
+
+			if ( ! cameraRecord || cameraRecord.looksCount === 0 ) {
+
+				alert( '没有播放内容，在定位相机时录制' );
+				return;
+
+			}
+
+			var keys = cameraRecord.keys;
+			var timeLen = cameraRecord.end - cameraRecord.start, timeNow = 0;
+
+			controls.enabled = false;
+			cameraPlaying = true;
+			camera.position.copy( cameraRecord.cameraLocated );
+			startCamera = performance.now();
+
+			for ( var i = 0, il = keys.length; i < il; i++ ) {
+
+				timeoutStart[i] = setTimeout( setCameraKey( keys[i], true ), keys[i].start - cameraRecord.start );
+				timeoutEnd[i] = setTimeout( setCameraKey( keys[i], false ), keys[i].end - cameraRecord.start );
+
+			}
+
+			timeInterval = setInterval( function () {
+
+				timeNow = performance.now() - startCamera;
+				dom.innerHTML = '停止（' + (timeNow/1000).toFixed(1) + '/' + (timeLen/1000).toFixed(1) + '）'
+
+			}, 100 );
+
+			timeoutStop = setTimeout( function () {
+
+				this.stopCamera( dom )
+
+			}.bind(this), timeLen );
+
+		}
+
+		this.stopCamera = function ( dom ) {
+
+			controls.enabled = true;
+			cameraPlaying = false;
+			resetCameraKey();
+
+			for ( var i = 0, il = timeoutStart.length; i < il; i++ ) {
+
+				clearTimeout( timeoutStart[i] );
+				clearTimeout( timeoutEnd[i] );
+
+			}
+
+			clearInterval( timeInterval );
+			clearTimeout( timeoutStop );
+			dom.innerHTML = '播放';
+
+		}
+
+		//
+
 		function dispatch( array, event ) {
 
 			for ( var i = 0, l = array.length; i < l; i ++ ) {
@@ -157,9 +336,56 @@ var APP = {
 
 		}
 
-		var prevTime;
+		var prevTime, lookAt = new THREE.Vector3(), lookIndex = 0;
 
 		function animate( time ) {
+
+			// position
+
+			if ( pointerControls.isLocked === true || cameraPlaying === true ) {
+
+				var delta = ( time - prevTime ) / 1000;
+
+				velocity.x -= velocity.x * 10.0 * delta;
+				velocity.z -= velocity.z * 10.0 * delta;
+				velocity.y -= velocity.y * 10.0 * delta;
+
+				direction.z = Number( moveForward ) - Number( moveBackward );
+				direction.x = Number( moveLeft ) - Number( moveRight );
+				direction.y = Number( moveDown ) - Number( moveUp );
+				direction.normalize(); // this ensures consistent movements in all directions
+
+				if ( moveForward || moveBackward ) velocity.z -= direction.z * 40.0 * cameraVelocity * delta;
+				if ( moveLeft || moveRight ) velocity.x -= direction.x * 40.0 * cameraVelocity * delta;
+				if ( moveUp || moveDown ) velocity.y -= direction.y * 40.0 * cameraVelocity * delta;
+
+				camera.translateX( velocity.x * delta );
+				camera.translateY( velocity.y * delta );
+				camera.translateZ( velocity.z * delta );
+
+			}
+
+			// lookat
+
+			if ( cameraPlaying && lookIndex < cameraRecord.looksCount ) {
+
+				var cameraTime = cameraRecord.looks[ lookIndex * 4 ] - cameraRecord.start;
+
+				while ( cameraTime < ( time - startCamera + 10 ) ) {
+
+					lookIndex++;
+					cameraTime = cameraRecord.looks[ lookIndex * 4 ] - cameraRecord.start;
+
+				}
+				lookIndex--;
+
+				lookAt.set( cameraRecord.looks[ lookIndex * 4 + 1 ], cameraRecord.looks[ lookIndex * 4 + 2 ], cameraRecord.looks[ lookIndex * 4 + 3 ] );
+				lookAt.add( camera.position );
+				camera.lookAt( lookAt );
+
+				lookIndex++;
+
+			}
 
 			try {
 
@@ -192,7 +418,7 @@ var APP = {
 
 			dispatch( events.start, arguments );
 
-			renderer.animate( animate );
+			renderer.setAnimationLoop( animate );
 
 		};
 
@@ -209,7 +435,7 @@ var APP = {
 
 			dispatch( events.stop, arguments );
 
-			renderer.animate( null );
+			renderer.setAnimationLoop( null );
 
 		};
 
@@ -223,6 +449,9 @@ var APP = {
 
 			renderer.dispose();
 
+			controls = undefined;
+			pointerControls = undefined;
+
 			camera = undefined;
 			scene = undefined;
 			renderer = undefined;
@@ -233,11 +462,76 @@ var APP = {
 
 		function onDocumentKeyDown( event ) {
 
+			switch ( event.keyCode ) {
+
+				case 38: // up
+				case 87: // w
+					moveForward = true;
+					break;
+
+				case 37: // left
+				case 65: // a
+					moveLeft = true;
+					break;
+
+				case 40: // down
+				case 83: // s
+					moveBackward = true;
+					break;
+
+				case 39: // right
+				case 68: // d
+					moveRight = true;
+					break;
+
+				case 67: // c
+					moveUp = true;
+					break;
+
+				case 88: // x
+					moveDown = true;
+					break;
+
+			}
+
 			dispatch( events.keydown, event );
 
 		}
 
 		function onDocumentKeyUp( event ) {
+
+			switch ( event.keyCode ) {
+
+				case 38: // up
+				case 87: // w
+					moveForward = false;
+					break;
+
+				case 37: // left
+				case 65: // a
+					moveLeft = false;
+					break;
+
+				case 40: // down
+				case 83: // s
+					moveBackward = false;
+					break;
+
+				case 39: // right
+				case 68: // d
+					moveRight = false;
+					break;
+
+				case 67: // c
+					moveUp = false;
+					break;
+
+				case 88: // x
+					moveDown = false;
+					break;
+
+			}
+
 
 			dispatch( events.keyup, event );
 

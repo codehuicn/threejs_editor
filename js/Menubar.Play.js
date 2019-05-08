@@ -16,19 +16,23 @@ Menubar.Play = function ( editor ) {
 	title.setTextContent( '播放' );
 	title.onClick( function () {
 
-		if ( isPlaying === false ) {
+		window.open( 'player.html' );
 
-			isPlaying = true;
-			title.setTextContent( '停止' );
-			signals.startPlayer.dispatch();
+		// 单独一个页面，避免冲突和影响
+		
+		// if ( isPlaying === false ) {
 
-		} else {
+		// 	isPlaying = true;
+		// 	title.setTextContent( '停止' );
+		// 	signals.startPlayer.dispatch();
 
-			isPlaying = false;
-			title.setTextContent( '播放' );
-			signals.stopPlayer.dispatch();
+		// } else {
 
-		}
+		// 	isPlaying = false;
+		// 	title.setTextContent( '播放' );
+		// 	signals.stopPlayer.dispatch();
+
+		// }
 
 	} );
 	container.add( title );

@@ -9,7 +9,7 @@
 		<link href="css/main.css" rel="stylesheet" />
 		<link id="theme" href="css/light.css" rel="stylesheet" />
 
-		<script src="common/build/three.js"></script>
+		<script src="common/build/three105.min.js"></script>
 		<script src="common/build/jquery.min.js"></script>
 		<script src="common/js/libs/system.min.js"></script>
 
@@ -271,6 +271,7 @@
 				signals.sceneGraphChanged.add( saveState );
 				signals.scriptChanged.add( saveState );
 				signals.historyChanged.add( saveState );
+				signals.cameraSetupLocated.add( saveState );
 
 				signals.showModal.add( function ( content ) {
 

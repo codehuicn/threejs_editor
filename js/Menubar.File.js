@@ -292,24 +292,21 @@ Menubar.File = function ( editor ) {
 
 			content = content.replace( '<!-- includes -->', includes.join( '\n\t\t' ) );
 
-			var editButton = '';
+			var code = '';
 
 			if ( config.getKey( 'project/editable' ) ) {
 
-				editButton = `
-			var button = document.createElement( 'a' );
-			button.href = '`;
-				editButton += api.urlData.editorUrl;
-				editButton += `#file=' + location.href.split( '/' ).slice( 0, - 1 ).join( '/' ) + '/app.json';
-			button.style.cssText = 'position: absolute; bottom: 20px; right: 20px; padding: 12px 14px; color: #fff; border: 1px solid #fff; border-radius: 4px; text-decoration: none;';
-			button.target = '_blank';
-			button.textContent = '编辑';
-			document.body.appendChild( button );
+				code = `
+			var edit_app = document.getElementById( 'edit_app' );
+			edit_app.href = '`;
+				code += api.urlData.editorUrl;
+				code += `#file=' + location.href.split( '/' ).slice( 0, - 1 ).join( '/' ) + '/app.json';
+			edit_app.style.cssText = 'display: inline-block';
 				`;
 
 			}
 
-			content = content.replace( '/* edit button */', editButton );
+			content = content.replace( '/* code */', code );
 
 			zip.file( 'index.html', content );
 
@@ -319,7 +316,7 @@ Menubar.File = function ( editor ) {
 			zip.file( 'js/app.js', content );
 
 		} );
-		loader.load( 'common/build/three89.min.js', function ( content ) {
+		loader.load( 'common/build/three105.min.js', function ( content ) {
 
 			zip.file( 'js/three.min.js', content );
 
@@ -327,6 +324,11 @@ Menubar.File = function ( editor ) {
 		loader.load( 'common/js/controls/EditorControls.js', function ( content ) {
 
 			zip.file( 'js/EditorControls.js', content );
+
+		} );
+		loader.load( 'common/js/controls/PointerLockControls.js', function ( content ) {
+
+			zip.file( 'js/PointerLockControls.js', content );
 
 		} );
 
