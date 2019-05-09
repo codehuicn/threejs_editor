@@ -4,8 +4,7 @@
 
 var Api = function () {
 
-	this.version = '1.4.2';
-	this.threejsVersion = '0.104.0';
+	this.version = '1.5.0';
 
 	this.urlData = {
 		baseUrl: 'http://localhost:3000/',
