@@ -34,6 +34,7 @@ var Editor = function () {
 		savingFinished: new Signal(),
 
 		themeChanged: new Signal(),
+		projectChanged: new Signal(),
 
 		transformModeChanged: new Signal(),
 		snapChanged: new Signal(),

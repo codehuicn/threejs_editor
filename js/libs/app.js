@@ -47,7 +47,7 @@ var APP = {
 			rendererMini.setClearColor( 0x000000 );
 			rendererMini.setPixelRatio( window.devicePixelRatio );
 
-			var project = json.project;
+			var project = json.project;  
 
 			if ( project.gammaInput ) renderer.gammaInput = true;
 			if ( project.gammaOutput ) renderer.gammaOutput = true;

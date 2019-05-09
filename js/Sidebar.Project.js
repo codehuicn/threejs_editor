@@ -55,6 +55,7 @@ Sidebar.Project = function ( editor ) {
 	var vr = new UI.Checkbox( config.getKey( 'project/vr' ) ).setLeft( '100px' ).onChange( function () {
 
 		config.setKey( 'project/vr', this.getValue() );
+		signals.projectChanged.dispatch();
 
 	} );
 
@@ -114,6 +115,7 @@ Sidebar.Project = function ( editor ) {
 	var rendererShadows = new UI.THREE.Boolean( config.getKey( 'project/renderer/shadows' ), '阴影' ).onChange( function () {
 
 		config.setKey( 'project/renderer/shadows', this.getValue() );
+		signals.projectChanged.dispatch();
 		updateRenderer();
 
 	} );
@@ -126,6 +128,7 @@ Sidebar.Project = function ( editor ) {
 	var rendererGammaInput = new UI.THREE.Boolean( config.getKey( 'project/renderer/gammaInput' ), 'γ input' ).onChange( function () {
 
 		config.setKey( 'project/renderer/gammaInput', this.getValue() );
+		signals.projectChanged.dispatch();
 		updateRenderer();
 
 	} );
@@ -136,6 +139,7 @@ Sidebar.Project = function ( editor ) {
 	var rendererGammaOutput = new UI.THREE.Boolean( config.getKey( 'project/renderer/gammaOutput' ), 'γ output' ).onChange( function () {
 
 		config.setKey( 'project/renderer/gammaOutput', this.getValue() );
+		signals.projectChanged.dispatch();
 		updateRenderer();
 
 	} );
