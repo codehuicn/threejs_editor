@@ -198,6 +198,8 @@ var Viewport = function ( editor ) {
 
 					var object = intersects[ 0 ].object;
 
+					if ( object.userData.lock ) return;
+
 					if ( object.userData.object !== undefined ) {
 
 						// helper
@@ -567,8 +569,16 @@ var Viewport = function ( editor ) {
 
 		if ( editor.selected === object ) {
 
-			selectionBox.setFromObject( object );
-			transformControls.update();
+			if ( object.visible && ! object.userData.lock ) {
+
+				selectionBox.setFromObject( object );
+				transformControls.update();
+
+			} else {
+
+				editor.select( null );
+
+			}
 
 		}
 

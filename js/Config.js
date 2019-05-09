@@ -25,6 +25,8 @@ var Config = function ( name ) {
 		'settings/shortcuts/translate': 'w',
 		'settings/shortcuts/rotate': 'e',
 		'settings/shortcuts/scale': 'r',
+		'settings/shortcuts/lock': 'l',
+		'settings/shortcuts/visible': 'h',
 		'settings/shortcuts/undo': 'z',
 		'settings/shortcuts/focus': 'f'
 	};

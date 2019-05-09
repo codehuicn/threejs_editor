@@ -18,8 +18,8 @@ Sidebar.Settings.Shortcuts = function ( editor ) {
 	var container = new UI.Div();
 	container.add( new UI.Break() );
 
-	var shortcuts = [ 'translate', 'rotate', 'scale', 'focus', 'undo' ],
-		shortcutsCN = [ '平移', '旋转', '缩放', '居中', '撤销（重做） Ctrl(+Shift)+' ];
+	var shortcuts = [ 'translate', 'rotate', 'scale', 'lock', 'visible', 'focus', 'undo' ],
+		shortcutsCN = [ '平移', '旋转', '缩放', '锁定（解锁）', '显示（隐藏）', '居中', '撤销（重做） Ctrl(+Shift)+' ];
 
 	for ( var i = 0; i < shortcuts.length; i ++ ) {
 
@@ -123,6 +123,47 @@ Sidebar.Settings.Shortcuts = function ( editor ) {
 			case config.getKey( 'settings/shortcuts/scale' ):
 
 				signals.transformModeChanged.dispatch( 'scale' );
+
+				break;
+
+			case config.getKey( 'settings/shortcuts/lock' ):
+
+				if ( editor.selected ) {
+
+					var userData = {};
+					$.extend( userData, editor.selected.userData );
+
+					if ( editor.selected.userData.lock ) {
+
+						userData.lock = false;
+
+					} else {
+
+						userData.lock = true;
+
+					}
+
+					editor.execute( new SetValueCommand( editor.selected, 'userData', userData ) );
+
+				}
+
+				break;
+
+			case config.getKey( 'settings/shortcuts/visible' ):
+
+				if ( editor.selected ) {
+
+					if ( editor.selected.visible ) {
+
+						editor.execute( new SetValueCommand( editor.selected, 'visible', false) );
+
+					} else {
+
+						editor.execute( new SetValueCommand( editor.selected, 'visible', true ) );
+
+					}
+
+				}
 
 				break;
 

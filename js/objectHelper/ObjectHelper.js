@@ -237,7 +237,9 @@ ObjectHelper.prototype.getDotObj = function ( opt ) {
 ObjectHelper.prototype.refreshObjectHelper = function ( obj, scene, sceneHelpers, textHelper ) {
 
     var minObjData = this.getMinObject( obj, scene.children, function ( obj1, obj2 ) {
-        return obj1.id !== obj2.id;
+
+        return obj1.id !== obj2.id && obj2.visible;
+        
     } );
 
     this.deleteObjectHelper( obj, sceneHelpers );
