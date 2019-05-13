@@ -21,6 +21,7 @@ var Viewport = function ( editor ) {
 	var sceneHelpers = editor.sceneHelpers;
 	var objectHelper = new ObjectHelper();
 	var textHelper = editor.textHelper;
+	var planeHelper = new ObjectHelper.Plane();
 
 	var objects = [];
 
@@ -28,6 +29,14 @@ var Viewport = function ( editor ) {
 
 	var grid = new THREE.GridHelper( 60, 60 );
 	sceneHelpers.add( grid );
+
+	// line helper
+
+	var lineHelper = {
+		plane: null,
+		planeDirection: 'y',
+		planePositionn: 0
+	}
 
 	// object helper
 
@@ -617,6 +626,66 @@ var Viewport = function ( editor ) {
 	signals.helperRemoved.add( function ( object ) {
 
 		objects.splice( objects.indexOf( object.getObjectByName( 'picker' ) ), 1 );
+
+	} );
+
+	signals.lineHelperChanged.add( function ( opt ) {
+
+		// opt = {
+		// 	switch: 0,  // 0 关闭；1 开启；2 切换
+		// 	axis: 'y',  // 默认 y 表示 XZ 平面
+		// 	position: 0
+		// }
+
+		var type = 3;  // 0 关闭；1 开启；3 更新
+		if ( opt.switch !== undefined ) {
+
+			type = opt.switch;
+
+			if ( type === 2 ) {  // 切换
+
+				if ( lineHelper.plane ) {
+					type = 0;
+				} else {
+					type = 1;
+				}
+
+			}
+
+		}
+
+		if ( opt.axis ) lineHelper.planeDirection = opt.axis;
+		if ( opt.position !== undefined ) lineHelper.planePositionn = opt.position;
+
+		if ( type === 0 ) {
+			close();
+		} else {
+			close(); open();
+		}
+
+		function open() {
+
+			lineHelper.plane = planeHelper.getPlane();
+
+			if ( lineHelper.planeDirection === 'x' ) {
+				lineHelper.plane.rotateY( Math.PI / 2 );
+			} else if ( lineHelper.planeDirection === 'y' ) {
+				lineHelper.plane.rotateX( - Math.PI / 2 );
+			}
+
+			lineHelper.plane.translateZ( lineHelper.planePositionn );
+			lineHelper.plane.updateMatrixWorld();
+
+			sceneHelpers.add( lineHelper.plane );
+
+		}
+
+		function close() {
+
+			sceneHelpers.remove( lineHelper.plane );
+			lineHelper.plane = null;
+
+		}
 
 	} );
 

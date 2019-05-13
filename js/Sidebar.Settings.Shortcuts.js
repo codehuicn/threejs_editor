@@ -18,8 +18,8 @@ Sidebar.Settings.Shortcuts = function ( editor ) {
 	var container = new UI.Div();
 	container.add( new UI.Break() );
 
-	var shortcuts = [ 'translate', 'rotate', 'scale', 'lock', 'visible', 'focus', 'undo' ],
-		shortcutsCN = [ '平移', '旋转', '缩放', '锁定（解锁）', '显示（隐藏）', '居中', '撤销（重做） Ctrl(+Shift)+' ];
+	var shortcuts = [ 'translate', 'rotate', 'scale', 'lineHelper', 'lineHelperX', 'lineHelperY', 'lineHelperZ', 'lock', 'visible', 'focus', 'undo' ],
+		shortcutsCN = [ '平移', '旋转', '缩放', '辅助', '辅助YZ', '辅助XZ', '辅助XY', '锁定（解锁）', '显示（隐藏）', '居中', '撤销（重做） Ctrl(+Shift)+' ];
 
 	for ( var i = 0; i < shortcuts.length; i ++ ) {
 
@@ -123,6 +123,38 @@ Sidebar.Settings.Shortcuts = function ( editor ) {
 			case config.getKey( 'settings/shortcuts/scale' ):
 
 				signals.transformModeChanged.dispatch( 'scale' );
+
+				break;
+
+			case config.getKey( 'settings/shortcuts/lineHelper' ):
+
+				signals.lineHelperChanged.dispatch( {
+					switch: 2
+				} );
+
+				break;
+
+			case config.getKey( 'settings/shortcuts/lineHelperX' ):
+
+				signals.lineHelperChanged.dispatch( {
+					axis: 'x',
+				} );
+
+				break;
+
+			case config.getKey( 'settings/shortcuts/lineHelperY' ):
+
+				signals.lineHelperChanged.dispatch( {
+					axis: 'y',
+				} );
+
+				break;
+
+			case config.getKey( 'settings/shortcuts/lineHelperZ' ):
+
+				signals.lineHelperChanged.dispatch( {
+					axis: 'z',
+				} );
 
 				break;
 

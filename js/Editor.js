@@ -60,6 +60,7 @@ var Editor = function () {
 
 		helperAdded: new Signal(),
 		helperRemoved: new Signal(),
+		lineHelperChanged: new Signal(),
 
 		materialChanged: new Signal(),
 
