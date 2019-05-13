@@ -40,6 +40,7 @@
 		<div class="button-wrap" id="buttons">
 			<span class="button-line" id="change_controls">切 换</span>
 			<span class="button-line" id="play_camera" style="display: none;">播 放</span>
+			<span class="button-line" id="pause_camera" style="display: none;">暂 停</span>
 			<a class="button-line" id="edit_app" href="##" target="_blank" style="display: none;">编 辑</a>
 		</div>
 
@@ -52,26 +53,41 @@
 				player.load( JSON.parse( text ) );
 
 				player.setSize( window.innerWidth, window.innerHeight );
-				player.setSizeMini( window.innerWidth * 0.2, window.innerHeight * 0.2 );
+				player.setSizeMini( parseInt(window.innerWidth * 0.2), parseInt(window.innerHeight * 0.2) );
 
 				player.play();
 
 				document.body.insertBefore( player.dom, document.getElementById( 'buttons' ) );
 				document.body.insertBefore( player.domMini, document.getElementById( 'buttons' ) );
-				player.domMini.style.cssText = 'position: absolute; bottom: 0; left: 0; border: 1px solid #fff;';
 
 				var cameraRecord = player.getCameraRecord();
 
 				if ( cameraRecord && cameraRecord.looksCount > 0 ) {
+
+					var pause_camera = document.getElementById( 'pause_camera' );
+					pause_camera.addEventListener( 'click', function () {
+
+						if ( player.getCameraPausing() ) {
+							player.resumeCamera( pause_camera );
+						} else {
+							player.pauseCamera( pause_camera );
+						}
+
+					} );
 
 					var play_camera = document.getElementById( 'play_camera' );
 					play_camera.style.cssText = 'display: inline-block;';
 					play_camera.addEventListener( 'click', function () {
 
 						if ( player.getCameraPlaying() ) {
-							player.stopCamera( play_camera );
+
+							player.stopCamera( play_camera, pause_camera );
+
 						} else {
-							player.playCamera( play_camera );
+
+							player.playCamera( play_camera, pause_camera );
+							pause_camera.style.cssText = 'display: inline-block;';
+
 						}
 
 					} );
@@ -89,7 +105,7 @@
 				window.addEventListener( 'resize', function () {
 
 					player.setSize( window.innerWidth, window.innerHeight );
-					player.setSizeMini( window.innerWidth * 0.2, window.innerHeight * 0.2 );
+					player.setSizeMini( parseInt(window.innerWidth * 0.2), parseInt(window.innerHeight * 0.2) );
 
 				} );
 

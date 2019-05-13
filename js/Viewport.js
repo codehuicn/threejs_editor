@@ -637,7 +637,7 @@ var Viewport = function ( editor ) {
 		// 	position: 0
 		// }
 
-		var type = 3;  // 0 关闭；1 开启；3 更新
+		var type = 0;  // 0 关闭；1 开启，更新
 		if ( opt.switch !== undefined ) {
 
 			type = opt.switch;
@@ -650,6 +650,14 @@ var Viewport = function ( editor ) {
 					type = 1;
 				}
 
+			}
+
+		} else {
+
+			if ( lineHelper.plane ) {
+				type = 1;
+			} else {
+				type = 0;
 			}
 
 		}

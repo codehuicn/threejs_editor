@@ -35,7 +35,7 @@ var APP = {
 		var cameraVelocity = 1;
 		var direction = new THREE.Vector3();
 
-		var pointerControls, cameraPlaying = false;
+		var pointerControls, cameraPlaying = false, cameraPausing = false;
 
 		this.load = function ( json ) {
 
@@ -47,7 +47,7 @@ var APP = {
 			rendererMini.setClearColor( 0x000000 );
 			rendererMini.setPixelRatio( window.devicePixelRatio );
 
-			var project = json.project;  
+			var project = json.project;
 
 			if ( project.gammaInput ) renderer.gammaInput = true;
 			if ( project.gammaOutput ) renderer.gammaOutput = true;
@@ -158,7 +158,7 @@ var APP = {
 
 			cameraHelper = new THREE.CameraHelper( camera );
 			cameraMini = camera.clone();
-			cameraMini.far = 2000;
+			cameraMini.far = 10000;
 			cameraMini.position.z = 500;
 			cameraMini.updateProjectionMatrix();
 
@@ -187,6 +187,7 @@ var APP = {
 			if ( renderer ) {
 
 				renderer.setSize( width, height );
+				dom.style.cssText = 'width: ' + width + 'px; height: ' + height + 'px';
 
 			}
 
@@ -204,6 +205,7 @@ var APP = {
 			if ( rendererMini ) {
 
 				rendererMini.setSize( width, height );
+				domMini.style.cssText = 'position: absolute; bottom: 0; left: 0; border: 1px solid #fff; width: ' + width + 'px; height: ' + height + 'px';
 
 			}
 
@@ -233,6 +235,12 @@ var APP = {
 		this.getCameraPlaying = function () {
 
 			return cameraPlaying;
+
+		}
+
+		this.getCameraPausing = function () {
+
+			return cameraPausing;
 
 		}
 
@@ -330,9 +338,9 @@ var APP = {
 
 		}
 
-		var startCamera, timeoutStart = [], timeoutEnd = [], timeInterval, timeoutStop, playDom;
+		var startCamera, pauseCamera = 0, pauseCameraLen = 0, playDom, pauseDom;
 
-		this.playCamera = function ( dom ) {
+		this.playCamera = function ( dom, domPause ) {
 
 			if ( ! cameraRecord || cameraRecord.looksCount === 0 ) {
 
@@ -346,17 +354,38 @@ var APP = {
 			startCamera = performance.now();
 
 			playDom = dom;
+			pauseDom = domPause;
 
 		}
 
-		this.stopCamera = function ( dom ) {
+		this.pauseCamera = function ( dom ) {
+
+			cameraPausing = true;
+			pauseCamera = performance.now();
+			dom.innerHTML = '继 续';
+
+		}
+
+		this.resumeCamera = function ( dom ) {
+
+			cameraPausing = false;
+			pauseCameraLen += performance.now() - pauseCamera;
+			dom.innerHTML = '暂 停';
+
+		}
+
+		this.stopCamera = function ( dom, domPause ) {
 
 			controls.enabled = true;
 			cameraPlaying = false;
+			cameraPausing = false;
+			pauseCameraLen = 0;
 			resetCameraKey();
 			lookIndex = 0;
 
-			dom.innerHTML = '播放';
+			dom.innerHTML = '播 放';
+			domPause.innerHTML = '暂 停';
+			domPause.style.cssText = 'display: none;';
 
 		}
 
@@ -376,13 +405,13 @@ var APP = {
 
 		function animate( time ) {
 
-			if ( cameraPlaying ) {
+			if ( cameraPlaying && ! cameraPausing ) {
 
 				if ( lookIndex < cameraRecord.looksCount ) {
 
 					var cameraTime = cameraRecord.looks[ lookIndex * 4 ] - cameraRecord.start;
 
-					while ( cameraTime < ( time - startCamera + 10 ) ) {
+					while ( cameraTime < ( time - startCamera - pauseCameraLen + 10 ) ) {
 
 						lookIndex++;
 						cameraTime = cameraRecord.looks[ lookIndex * 4 ] - cameraRecord.start;
@@ -398,12 +427,12 @@ var APP = {
 
 					lookIndex++;
 
-					timeNow = time - startCamera;
+					timeNow = time - startCamera - pauseCameraLen;
 					playDom.innerHTML = '停止（' + (timeNow/1000).toFixed(1) + '/' + (timeLen/1000).toFixed(1) + '）';
 
 				} else {
 
-					that.stopCamera( playDom );
+					that.stopCamera( playDom, pauseDom );
 
 				}
 
@@ -515,6 +544,18 @@ var APP = {
 		function onDocumentKeyDown( event ) {
 
 			switch ( event.keyCode ) {
+
+				case 32: // 空格
+					if ( cameraPlaying ) {
+
+						if ( cameraPausing ) {
+							that.resumeCamera( pauseDom );
+						} else {
+							that.pauseCamera( pauseDom );
+						}
+
+					}
+					break;
 
 				case 38: // up
 				case 87: // w
