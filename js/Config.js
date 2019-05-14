@@ -27,9 +27,9 @@ var Config = function ( name ) {
 		'settings/shortcuts/scale': 'r',
 
 		'settings/shortcuts/lineHelper': 'q',
-		'settings/shortcuts/lineHelperX': 'x',
-		'settings/shortcuts/lineHelperY': 'y',
-		'settings/shortcuts/lineHelperZ': 'z',
+		'settings/shortcuts/lineHelperX': '1',
+		'settings/shortcuts/lineHelperY': '2',
+		'settings/shortcuts/lineHelperZ': '3',
 
 		'settings/shortcuts/lock': 'l',
 		'settings/shortcuts/visible': 'h',

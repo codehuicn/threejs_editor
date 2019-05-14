@@ -41,6 +41,14 @@
  * * 3 返回：
  * * 模型对象
  *
+ * #### 缩放模型到合适的大小
+ * * 1 使用方式：
+ * * `objectHelper.scaleObjectsRelatively( objs, camera, scale );`
+ * * 2 参数：
+ * * `objs` 模型数组；`camera` 相机；`scale` 缩放数值
+ * * 3 返回：
+ * * 无
+ *
  * #### 刷新模型的辅助线
  * * 1 使用方式：
  * * `objectHelper.refreshObjectHelper( obj, scene, sceneHelpers, textHelper );`
@@ -234,12 +242,25 @@ ObjectHelper.prototype.getDotObj = function ( opt ) {
 
 }
 
+ObjectHelper.prototype.scaleObjectsRelatively = function ( objs, camera, scale ) {
+
+    var distance, scaleNew;
+    for ( var i = 0, il = objs.length; i < il; i++ ) {
+
+        distance = objs[ i ].position.distanceTo( camera.position );
+        scaleNew = distance / 200 * scale;
+        objs[ i ].scale.set( scaleNew, scaleNew, scaleNew );
+
+    }
+
+}
+
 ObjectHelper.prototype.refreshObjectHelper = function ( obj, scene, sceneHelpers, textHelper ) {
 
     var minObjData = this.getMinObject( obj, scene.children, function ( obj1, obj2 ) {
 
         return obj1.id !== obj2.id && obj2.visible;
-        
+
     } );
 
     this.deleteObjectHelper( obj, sceneHelpers );

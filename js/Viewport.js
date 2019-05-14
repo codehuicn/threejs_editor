@@ -19,8 +19,9 @@ var Viewport = function ( editor ) {
 	var camera = editor.camera;
 	var scene = editor.scene;
 	var sceneHelpers = editor.sceneHelpers;
-	var objectHelper = new ObjectHelper();
+	var lineHelper = editor.lineHelper;
 	var textHelper = editor.textHelper;
+	var objectHelper = new ObjectHelper();
 	var planeHelper = new ObjectHelper.Plane();
 
 	var objects = [];
@@ -29,14 +30,6 @@ var Viewport = function ( editor ) {
 
 	var grid = new THREE.GridHelper( 60, 60 );
 	sceneHelpers.add( grid );
-
-	// line helper
-
-	var lineHelper = {
-		plane: null,
-		planeDirection: 'y',
-		planePositionn: 0
-	}
 
 	// object helper
 
@@ -151,14 +144,24 @@ var Viewport = function ( editor ) {
 
 		var intersects = raycaster.intersectObjects( objects );
 
-		if ( intersects.length === 0 && cameraLocated ) {
+		if ( intersects.length === 0 ) {
 
-			// 定位相机
+			if ( cameraLocated ) {
 
-			var plane = new THREE.Plane( new THREE.Vector3( 0, 1, 0 ), 0 );
-			var point = new THREE.Vector3();
-			raycaster.ray.intersectPlane( plane, point );
-			intersects = [ { point: point } ];
+				// 定位相机
+
+				var plane = new THREE.Plane( new THREE.Vector3( 0, 1, 0 ), 0 );
+				var point = new THREE.Vector3();
+				raycaster.ray.intersectPlane( plane, point );
+				intersects = [ { point: point } ];
+
+			} else if ( lineHelper.plane ) {
+
+				// 划线
+
+				intersects = raycaster.intersectObjects( [ lineHelper.plane ] );
+
+			}
 
 		}
 
@@ -200,6 +203,33 @@ var Viewport = function ( editor ) {
 					cameraRecord.moves = [];
 					cameraRecord.looksCount = 0;
 					cameraRecord.start = performance.now();
+
+				} else if ( lineHelper.plane ) {
+
+					// 划线
+
+					var obj = objectHelper.getDotObj( { color: 0x00ffff } );
+					obj.position.copy( intersects[ 0 ].point );
+					sceneHelpers.add( obj );
+
+					lineHelper.dots = lineHelper.dots.slice( 0, lineHelper.dotIndex + 1 );
+					lineHelper.dotObjects = lineHelper.dotObjects.slice( 0, lineHelper.dotIndex + 1 );
+
+					lineHelper.dots.push( intersects[ 0 ].point );
+					lineHelper.dotIndex++;
+					lineHelper.dotObjects.push( obj );
+
+					objectHelper.scaleObjectsRelatively( [obj], camera, 1 );
+					lineHelper.dotObjectsAll.push( obj );
+
+					if ( lineHelper.dotIndex > 0 ) {
+
+						sceneHelpers.remove( lineHelper.line );
+
+						lineHelper.line = lineHelper.lineHelper.getLine( lineHelper.dots.slice( 0, lineHelper.dotIndex + 1 ), { color: 0xffffff } );
+						sceneHelpers.add( lineHelper.line );
+
+					}
 
 				} else {
 
@@ -500,6 +530,8 @@ var Viewport = function ( editor ) {
 
 	signals.cameraChanged.add( function () {
 
+		objectHelper.scaleObjectsRelatively( lineHelper.dotObjectsAll, camera, 1 );
+
 		// render();
 
 	} );
@@ -652,6 +684,12 @@ var Viewport = function ( editor ) {
 
 			}
 
+			if ( type === 0 ) {
+				finish();
+			} else {
+				init();
+			}
+
 		} else {
 
 			if ( lineHelper.plane ) {
@@ -692,6 +730,67 @@ var Viewport = function ( editor ) {
 
 			sceneHelpers.remove( lineHelper.plane );
 			lineHelper.plane = null;
+
+		}
+
+		function init() {
+
+			lineHelper.dots = [];
+			lineHelper.dotIndex = -1;
+			lineHelper.dotObjects = [];
+			lineHelper.dotObjectsAll = [];
+			lineHelper.line = null;
+
+		}
+
+		function finish() {
+
+			// if ( lineHelper.line ) {
+
+			// 	lineHelper.line.name = 'Line';
+			// 	editor.execute( new AddObjectCommand( lineHelper.line.clone() ) );
+
+			// }
+
+			sceneHelpers.remove( lineHelper.line );
+			lineHelper.line = null;
+
+			for ( var i = 0, l = lineHelper.dotObjects.length; i < l; i++ ) {
+				sceneHelpers.remove( lineHelper.dotObjects[ i ] );
+			}
+
+		}
+
+	} );
+
+	signals.lineHelperUndo.add( function ( step ) {
+
+		lineHelper.dotIndex += step;
+		if ( lineHelper.dotIndex < 0 ) {
+			lineHelper.dotIndex = -1;
+		} else if ( lineHelper.dotIndex > lineHelper.dots.length - 1 ) {
+			lineHelper.dotIndex = lineHelper.dots.length - 1;
+		}
+
+		for ( var i = 0, l = lineHelper.dotObjects.length; i < l; i++ ) {
+
+			if ( i > lineHelper.dotIndex ) {
+				sceneHelpers.remove( lineHelper.dotObjects[ i ] );
+			} else {
+				sceneHelpers.add( lineHelper.dotObjects[ i ] );
+			}
+
+		}
+
+		sceneHelpers.remove( lineHelper.line );
+		if ( lineHelper.dotIndex > 0 ) {
+
+			lineHelper.line = lineHelper.lineHelper.getLine( lineHelper.dots.slice( 0, lineHelper.dotIndex + 1 ), {} );
+			sceneHelpers.add( lineHelper.line );
+
+		} else {
+
+			lineHelper.line = null;
 
 		}
 

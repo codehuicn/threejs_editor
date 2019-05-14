@@ -58,22 +58,28 @@ var Toolbar = function ( editor ) {
 
 	} );
 
-	var lineHelper = new UI.THREE.Boolean( false, '辅助' ).onChange( updateHelper );
-	buttons.add( lineHelper );
-
-	var helperPosition = new UI.Number( 0 ).setWidth( '40px' ).onChange( updateHelper );
-	buttons.add( new UI.Text( '移动: ' ) );
-	buttons.add( helperPosition );
-
-	function updateHelper() {
+	var lineHelper = new UI.THREE.Boolean( false, '辅助' ).onChange( function () {
 
 		signals.lineHelperChanged.dispatch( {
 			switch: lineHelper.getValue() ? 1 : 0,  // 0 关闭；1 开启；2 切换
 			// axis: 'y',                       // 默认 y 表示 XZ 平面
+			// position: helperPosition.getValue()
+		} );
+
+	} );
+	buttons.add( lineHelper );
+
+	var helperPosition = new UI.Number( 0 ).setWidth( '40px' ).onChange( function () {
+
+		signals.lineHelperChanged.dispatch( {
+			// switch: lineHelper.getValue() ? 1 : 0,  // 0 关闭；1 开启；2 切换
+			// axis: 'y',                       // 默认 y 表示 XZ 平面
 			position: helperPosition.getValue()
 		} );
 
-	}
+	} );
+	buttons.add( new UI.Text( '移动: ' ) );
+	buttons.add( helperPosition );
 
 	signals.lineHelperChanged.add( function ( opt ) {
 

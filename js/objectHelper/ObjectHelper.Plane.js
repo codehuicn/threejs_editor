@@ -52,7 +52,6 @@ ObjectHelper.Plane.prototype.getPlane = function ( optG, optM ) {
     var geometry = new THREE.PlaneBufferGeometry( optGeometry.width, optGeometry.height, optGeometry.widthSeg, optGeometry.heightSeg );
     var material = new THREE.MeshBasicMaterial( optMaterial );
     var mesh = new THREE.Mesh( geometry, material );
-    mesh.name = 'Plane';
 
     return mesh;
 

@@ -61,6 +61,7 @@ var Editor = function () {
 		helperAdded: new Signal(),
 		helperRemoved: new Signal(),
 		lineHelperChanged: new Signal(),
+		lineHelperUndo: new Signal(),
 
 		materialChanged: new Signal(),
 
@@ -96,7 +97,21 @@ var Editor = function () {
 	this.materials = {};
 	this.textures = {};
 	this.scripts = {};
+
 	this.textHelper = new ObjectHelper.Text();
+	this.lineHelper = {
+		plane: null,
+		planeDirection: 'y',
+		planePositionn: 0,
+
+		dots: [],
+		dotIndex: -1,
+		dotObjects: [],
+		line: null,
+		lineHelper: new ObjectHelper.Line(),
+
+		dotObjectsAll: []
+	};
 
 	this.selected = null;
 	this.helpers = {};
@@ -554,13 +569,21 @@ Editor.prototype = {
 
 	undo: function () {
 
-		this.history.undo();
+		if ( this.lineHelper.plane ) {
+			this.signals.lineHelperUndo.dispatch( -1 );
+		} else {
+			this.history.undo();
+		}
 
 	},
 
 	redo: function () {
 
-		this.history.redo();
+		if ( this.lineHelper.plane ) {
+			this.signals.lineHelperUndo.dispatch( 1 );
+		} else {
+			this.history.redo();
+		}
 
 	}
 
