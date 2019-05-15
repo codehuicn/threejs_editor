@@ -18,8 +18,8 @@ Sidebar.Settings.Shortcuts = function ( editor ) {
 	var container = new UI.Div();
 	container.add( new UI.Break() );
 
-	var shortcuts = [ 'translate', 'rotate', 'scale', 'lineHelper', 'lineHelperX', 'lineHelperY', 'lineHelperZ', 'lock', 'visible', 'focus', 'undo' ],
-		shortcutsCN = [ '平移', '旋转', '缩放', '辅助', '辅助YZ', '辅助XZ', '辅助XY', '锁定（解锁）', '显示（隐藏）', '居中', '撤销（重做） Ctrl(+Shift)+' ];
+	var shortcuts = [ 'translate', 'rotate', 'scale', 'lineHelper', 'lineHelperX', 'lineHelperY', 'lineHelperZ', 'lineHelperShape2', 'lineHelperShape3', 'lock', 'visible', 'focus', 'undo' ],
+		shortcutsCN = [ '平移', '旋转', '缩放', '辅助', '辅助YZ', '辅助XZ', '辅助XY', '辅助面', '辅助体', '锁定（解锁）', '显示（隐藏）', '居中', '撤销（重做） Ctrl(+Shift)+' ];
 
 	for ( var i = 0; i < shortcuts.length; i ++ ) {
 
@@ -155,6 +155,18 @@ Sidebar.Settings.Shortcuts = function ( editor ) {
 				signals.lineHelperChanged.dispatch( {
 					axis: 'z',
 				} );
+
+				break;
+
+			case config.getKey( 'settings/shortcuts/lineHelperShape2' ):
+
+				signals.lineHelperRun.dispatch( 'shape2' );
+
+				break;
+
+			case config.getKey( 'settings/shortcuts/lineHelperShape3' ):
+
+				signals.lineHelperRun.dispatch( 'shape3' );
 
 				break;
 

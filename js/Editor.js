@@ -60,8 +60,10 @@ var Editor = function () {
 
 		helperAdded: new Signal(),
 		helperRemoved: new Signal(),
+
 		lineHelperChanged: new Signal(),
 		lineHelperUndo: new Signal(),
+		lineHelperRun: new Signal(),
 
 		materialChanged: new Signal(),
 

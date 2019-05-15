@@ -30,6 +30,8 @@ var Config = function ( name ) {
 		'settings/shortcuts/lineHelperX': '1',
 		'settings/shortcuts/lineHelperY': '2',
 		'settings/shortcuts/lineHelperZ': '3',
+		'settings/shortcuts/lineHelperShape2': 'p',
+		'settings/shortcuts/lineHelperShape3': 'o',
 
 		'settings/shortcuts/lock': 'l',
 		'settings/shortcuts/visible': 'h',

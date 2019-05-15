@@ -31,6 +31,23 @@ var Viewport = function ( editor ) {
 	var grid = new THREE.GridHelper( 60, 60 );
 	sceneHelpers.add( grid );
 
+
+	function initLineHelper() {
+
+		sceneHelpers.remove( lineHelper.line );
+
+		for ( var i = 0, l = lineHelper.dotObjects.length; i < l; i++ ) {
+			sceneHelpers.remove( lineHelper.dotObjects[ i ] );
+		}
+
+		lineHelper.dots = [];
+		lineHelper.dotIndex = -1;
+		lineHelper.dotObjects = [];
+		lineHelper.dotObjectsAll = [];
+		lineHelper.line = null;
+
+	}
+
 	// object helper
 
 	var box = new THREE.Box3();
@@ -685,9 +702,7 @@ var Viewport = function ( editor ) {
 			}
 
 			if ( type === 0 ) {
-				finish();
-			} else {
-				init();
+				initLineHelper();
 			}
 
 		} else {
@@ -733,34 +748,6 @@ var Viewport = function ( editor ) {
 
 		}
 
-		function init() {
-
-			lineHelper.dots = [];
-			lineHelper.dotIndex = -1;
-			lineHelper.dotObjects = [];
-			lineHelper.dotObjectsAll = [];
-			lineHelper.line = null;
-
-		}
-
-		function finish() {
-
-			// if ( lineHelper.line ) {
-
-			// 	lineHelper.line.name = 'Line';
-			// 	editor.execute( new AddObjectCommand( lineHelper.line.clone() ) );
-
-			// }
-
-			sceneHelpers.remove( lineHelper.line );
-			lineHelper.line = null;
-
-			for ( var i = 0, l = lineHelper.dotObjects.length; i < l; i++ ) {
-				sceneHelpers.remove( lineHelper.dotObjects[ i ] );
-			}
-
-		}
-
 	} );
 
 	signals.lineHelperUndo.add( function ( step ) {
@@ -791,6 +778,31 @@ var Viewport = function ( editor ) {
 		} else {
 
 			lineHelper.line = null;
+
+		}
+
+	} );
+
+	signals.lineHelperRun.add( function ( name ) {
+
+		if ( lineHelper.plane && lineHelper.dots.length > 2 ) {
+
+			if ( name === 'shape2' ) {
+
+				var mesh = planeHelper.getShape2( lineHelper.dots, {} );
+				mesh.name = 'Shape2';
+				editor.execute( new AddObjectCommand( mesh ) );
+
+			} else if ( name === 'shape3' ) {
+
+				var mesh = planeHelper.getShape3( lineHelper.dots, {}, {} );
+				mesh.name = 'Shape3';
+				editor.execute( new AddObjectCommand( mesh ) );
+
+			}
+
+			initLineHelper();
+			return;
 
 		}
 
