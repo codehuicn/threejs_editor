@@ -265,7 +265,7 @@ ObjectHelper.prototype.refreshObjectHelper = function ( obj, scene, sceneHelpers
 
     this.deleteObjectHelper( obj, sceneHelpers );
 
-    if ( minObjData ) {
+    if ( minObjData.objMin ) {
 
         var lineHelper = new ObjectHelper.Line();
         var dashedLine = lineHelper.getDashedLine( [ minObjData.objNowDot, minObjData.objMinDot ], { color: 0xff0000 } );

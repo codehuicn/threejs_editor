@@ -146,6 +146,9 @@ var Loader = function ( editor ) {
 
 					collada.scene.name = filename;
 
+					var camera = collada.scene.getObjectByProperty( 'type', 'PerspectiveCamera' );
+					camera.parent.remove( camera );
+
 					editor.execute( new AddObjectCommand( collada.scene ) );
 
 				}, false );
