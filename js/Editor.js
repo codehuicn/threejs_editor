@@ -274,6 +274,7 @@ Editor.prototype = {
 
 			if ( object instanceof THREE.Camera ) {
 
+				return;
 				helper = new THREE.CameraHelper( object, 1 );
 
 			} else if ( object instanceof THREE.PointLight ) {
