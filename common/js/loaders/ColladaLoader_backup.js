@@ -1,7 +1,7 @@
+
 /**
  * @author mrdoob / http://mrdoob.com/
  * @author Mugen87 / https://github.com/Mugen87
- * @author codehuicn / https://github.com/codehuicn
  */
 
 THREE.ColladaLoader = function ( manager ) {
@@ -53,544 +53,28 @@ THREE.ColladaLoader.prototype = {
 
 	},
 
-	parse: function ( text, path, runScene ) {
+	parse: function ( text, path ) {
 
-		/**
-		 * ### 使用方式：
-		 * ```js
-		 * var sourceTag = getElementByTag( 'source', true, 1 );
-		 * // <source id="ID15"> <float_array id="ID19" count="60">...</float_array>...</source>
-		 * var floatArrayTag = getElementByTag( 'float_array', true, 0, sourceTag );
-		 * // <float_array id="ID19" count="60">...</float_array>
-		 * var idString = getDataByElement( floatArrayTag, 'attribute', 'id' );
-		 * // ID19
-		 * var content = getDataByElement( floatArrayTag, 'content' );
-		 * // 0 1.818989e-12 60.61458 59.05512
-		 * var name = getDataByElement( floatArrayTag, 'name' );
-		 * // float_array
-		 * ```
-		 *
-		 * ### 参数：
-		 * `element` 元素字符串；`type` 获取的方式：`attribute` 属性，`content` 内容，`name` 标签名；`name` 属性名称，可不传
-		 *
-		 * ### 返回：
-		 * 包含数据的字符串；`null`
-		 */
+		function getElementsByTagName( xml, name ) {
 
-		function getDataByElement( element, type, name ) {
+			// Non recursive xml.getElementsByTagName() ...
 
-			if ( ! element || ! type ) return null;
+			var array = [];
+			var childNodes = xml.childNodes;
 
-			if ( type === 'attribute' ) {
+			for ( var i = 0, l = childNodes.length; i < l; i ++ ) {
 
-				if ( ! name ) return null;
+				var child = childNodes[ i ];
 
-				var reg = new RegExp( ' ' + name + '=".*?"', 'g' );
-				var subEle = element.slice( 1, element.indexOf( '>' ) );
-				var array = subEle.match( reg );
+				if ( child.nodeName === name ) {
 
-				if ( array ) return array[ 0 ].slice( name.length + 3, -1 );
-				return null;
-
-			} else if ( type === 'content' ) {
-
-				var index0, index1;
-				index0 = element.indexOf( '>' );
-				index1 = element.lastIndexOf( '</' );
-
-				if ( index0 === -1 || index1 === -1 ) return null;
-				return element.slice( index0 + 1, index1 );
-
-			} else if ( type === 'name' ) {
-
-				var reg = new RegExp( '<.+?[ >]{1,1}', 'g' );
-				var array = element.match( reg );
-
-				if ( array ) return array[ 0 ].slice( 1, -1 );
-				return null;
-
-			}
-
-		}
-
-		/**
-		 * ### 使用方式：
-		 * ```js
-		 * var sourceTag = getElementByTag( 'source', true, 1 );
-		 * // <source id="ID15"> <float_array id="ID19" count="60">...</float_array>...</source>
-		 * var floatArrayTag = getElementByTag( 'float_array', true, 0, sourceTag );
-		 * // <float_array id="ID19" count="60">...</float_array>
-		 * var floatArrayTag = setDataByElement( floatArrayTag, 'attribute', { key: 'ddd', value: '222' } );
-		 * // <float_array ddd="222" id="ID19" count="60">...</float_array>
-		 * var floatArrayTag = setDataByElement( floatArrayTag, 'content', { content: 'ddd' } );
-		 * // <float_array ddd="222" id="ID19" count="60">ddd</float_array>
-		 * ```
-		 *
-		 * ### 参数：
-		 * `element` 元素字符串；`type` 设置的方式：`attribute` 属性，`content` 内容；
-		 * `data` 设置的内容，对象类型：`key` 属性名，`value` 属性值，`content` 内容
-		 *
-		 * ### 返回：
-		 * 包含设置的字符串；`null` 设置失败
-		 */
-
-		function setDataByElement( element, type, data ) {
-
-			if ( ! element || ! type ) return null;
-
-			if ( type === 'attribute' ) {
-
-				if ( ! data || ! data.key ) return null;
-
-				var index0, index1, index2;
-				index0 = element.indexOf( '<' );
-				index1 = element.indexOf( '>' );
-				index2 = element.indexOf( ' ' );
-
-				if ( index0 === -1 || index1 === -1 ) return null;
-
-				var attr = ' ' + data.key + '="' + data.value + '"';
-				if ( index2 === -1 || index2 > index1 ) {
-
-					if ( element.charAt( index1 - 1 ) === '/' ) index1 -= 1;
-					element = element.slice( 0, index1 ) + attr + element.slice( index1 );
-
-				} else {
-
-					element = element.slice( 0, index2 ) + attr + element.slice( index2 );
-
-				}
-
-				return element;
-
-			} else if ( type === 'content' ) {
-
-				if ( ! data ) return null;
-
-				var index0, index1;
-				index0 = element.indexOf( '>' );
-				index1 = element.lastIndexOf( '</' );
-
-				if ( index0 === -1 || index1 === -1 ) return null;
-				element = element.slice( 0, index0 + 1 ) + data.content + element.slice( index1 );
-				return element;
-
-			}
-
-		}
-
-		/**
-		 * ### 使用方式：
-		 * ```js
-		 * var sourceTag = getElementByTag( 'source', true, 1 );
-		 * // <source id="ID15"> <float_array id="ID19" count="60">...</float_array>...</source>
-		 * var floatArrayTag = getElementByTag( 'float_array', true, 0, sourceTag );
-		 * // <float_array id="ID19" count="60">...</float_array>
-		 * var paramTag = getElementByTag( 'param', false, 1, sourceTag );
-		 * // <param name="Y" type="float" />
-		 * ```
-		 *
-		 * ### 参数：
-		 * `tag` 标签名称；`end` 是否有结束标签，自动判断；`index` 匹配字符串的索引，从 0 开始；`subText` 字符串，可不传
-		 *
-		 * ### 返回：
-		 * 包含标签的字符串；`null`
-		 */
-
-		function getElementByTag( tag, end1, index, subText ) {
-
-			if ( ! tag || isNaN( parseInt( index ) ) ) return null;
-
-			var index0 = 0, index1, match, endIndex, end;  // 结束标签自动判断，不需要传入
-			var startNum = 0, endNum = 0, checkIndex, checkChar;
-
-			if (
-				tag === 'up_axis' || tag === 'visual_scene' ||
-				tag === 'asset' || tag === 'scene' ||
-				tag.indexOf( 'library' ) !== -1
-			) {
-
-				index0 = text.indexOf( '<' + tag );
-
-				if ( index0 === -1 || index > 0 ) {
-
-					console.log( 'getElementByTag return null, tag:', tag );
-					return null;
-
-				}
-
-				index1 = text.indexOf( '</' + tag + '>' ) + tag.length + 3;
-				return text.slice( index0, index1 );
-
-			} else if (
-				tag === 'unit' || tag === 'instance_visual_scene'
-			) {
-
-				index0 = text.indexOf( '<' + tag );
-
-				if ( index0 === -1 || index > 0 ) {
-
-					console.log( 'getElementByTag return null, tag:', tag );
-					return null;
-
-				}
-
-				index1 = text.indexOf( '/>', index0 ) + 2;
-				return text.slice( index0, index1 );
-
-			}
-
-			if ( ! subText ) {
-
-				console.log( 'getElementByTag return null, tag:', tag );
-				return null;
-
-			}
-
-			index1 = subText.indexOf( '>' );
-			if ( index1 === -1 ) return null;
-
-			for ( var i = 0; i <= index; i++ ) {
-
-				// 开始搜索
-
-				index0 = subText.indexOf( '<', index1 + 1 );
-				if ( index0 === -1 ) return null;
-
-				// 是否有结束标签
-
-				endIndex = subText.indexOf( '>', index0 );
-				if ( subText.charAt( endIndex - 1 ) === '/' ) {
-					end = false;
-				} else {
-					end = true;
-				}
-
-				// 是否匹配
-
-				match = subText.slice( index0, tag.length + 2 + index0 );
-
-				if ( match === '<' + tag + ' ' || match === '<' + tag + '>' ) {
-
-					match = true;
-
-				} else {
-
-					match = false;
-					index++;
-
-				}
-
-				// 循环检查
-
-				checkIndex = index0;
-
-				while ( true ) {
-
-					checkChar = subText.charAt( checkIndex );
-
-					if ( checkChar === '<' ) {
-
-						if ( subText.charAt( checkIndex + 1 ) !== '/' ) startNum++;
-
-					} else if ( checkChar === '/' ) {
-
-						if (
-							subText.charAt( checkIndex - 1 ) === '<' ||
-							subText.charAt( checkIndex + 1 ) === '>'
-						) endNum++;
-
-					}
-
-					if ( startNum === 0 && endNum === 1 ) return null;
-
-					if ( startNum !== 0 && startNum === endNum ) {
-
-						index1 = checkIndex;
-						break;
-
-					}
-
-					checkIndex++;
-
-				}
-
-				// 进入下一轮搜索
-
-				index1 = subText.indexOf( '>', index1 );
-
-			}
-
-			if ( match ) {
-				return subText.slice( index0, index1 + 1 );
-			} else {
-				return null;
-			}
-
-		}
-
-/**
-
-### 使用方式：
-```js
-splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </ll>');
-// ["<gg 1></gg> ", "<gg 2></gg> ", "<gg 3> </gg> </ll>"]
-```
-
-### 参数：
-`tag` 标签名称；`mark` 分段的标记；`count` 分段的数量；`subText` 字符串，不传则使用`tag`获取
-
-### 返回：
-包含字符串的数组；`null`
-
-### 注意：
-需要使用`getElementByTag`的函数
-
-*/
-
-		function splitElementByMark( tag, mark, count, subText ) {
-
-			if ( ! tag || ! mark || isNaN( parseInt( count ) ) ) return null;
-
-			var subText, markNum = 0, index0 = 0, index1 = 0, startIndex = 0, countTotal, countArr = [];
-
-			if ( ! subText ) {
-
-				subText = getElementByTag( tag, true, 0 );
-				if ( ! subText ) return null;
-
-			}
-
-			while ( true ) {
-
-				index0 = subText.indexOf( mark, index0 );
-				if ( count < 2 ) return [ subText.slice( index0 ) ];
-
-				if ( index0 === -1 ) {
-
-					countTotal = Math.ceil( markNum / count );
-					break;
-
-				} else {
-
-					markNum++;
-					index0 = index0 + mark.length;
+					array.push( child );
 
 				}
 
 			}
 
-			index0 = 0;
-
-			for ( var i = 0, j = 1; i < markNum; i++ ) {
-
-				index0 = subText.indexOf( mark, index1 );
-				if ( index0 === -1 ) {
-
-					countArr.push( subText.slice( startIndex ) );
-					break;
-
-				}
-
-				if ( i === 0 ) startIndex = index0;
-				if ( markNum === 1 ) countArr.push( subText.slice( startIndex ) );
-
-				if ( i === countTotal * j ) {
-
-					if ( j < count ) {
-
-						countArr.push( subText.slice( startIndex, index0 ) );
-						startIndex = index0;
-						j++;
-
-					}
-
-					if ( j === count || markNum - i <= countTotal ) {
-
-						countArr.push( subText.slice( startIndex ) );
-						break;
-
-					}
-
-				}
-
-				index1 = index0 + mark.length;
-
-			}
-
-			return countArr;
-
-		}
-
-		/**
-		 * ### 使用方式：
-		 * ```js
-		 * var sourceTag = getElementByTag( 'source', true, 1 );
-		 * // <source id="ID15"> <float_array id="ID19" count="60">...</float_array>...</source>
-		 * var paramTag = getElementByTag( 'param', false, 1, sourceTag );
-		 * // <param name="Y" type="float" />
-		 * var sourceTag = replaceElementByTag( 'float_array', 0, paramTag, sourceTag );
-		 * // <source id="ID15"> <param name="Y" type="float" />...</source>
-		 * ```
-		 *
-		 * ### 参数：
-		 * `tag` 替换的标签名称；`index` 匹配字符串的索引，从 0 开始；`element` 新的字符串；`subText` 字符串
-		 *
-		 * ### 返回：
-		 * 包含标签的字符串；`null`
-		 */
-
-		function replaceElementByTag( tag, index, element, subText ) {
-
-			if ( ! tag || isNaN( parseInt( index ) ) ) return subText;
-
-			var index0 = 0, index1, match, endIndex, end;  // 结束标签自动判断，不需要传入
-			var startNum = 0, endNum = 0, checkIndex, checkChar;
-
-			if ( subText ) {
-
-				index1 = subText.indexOf( '>' );
-				if ( index1 === -1 ) return subText;
-
-				for ( var i = 0; i <= index; i++ ) {
-
-					// 开始搜索
-
-					index0 = subText.indexOf( '<', index1 + 1 );
-					if ( index0 === -1 ) return subText;
-
-					// 是否有结束标签
-
-					endIndex = subText.indexOf( '>', index0 );
-					if ( subText.charAt( endIndex - 1 ) === '/' ) {
-						end = false;
-					} else {
-						end = true;
-					}
-
-					// 是否匹配
-
-					match = subText.slice( index0, tag.length + 2 + index0 );
-
-					if ( match === '<' + tag + ' ' || match === '<' + tag + '>' ) {
-
-						match = true;
-
-					} else {
-
-						match = false;
-						index++;
-
-					}
-
-					// 循环检查
-
-					checkIndex = index0;
-
-					while ( true ) {
-
-						checkChar = subText.charAt( checkIndex );
-
-						if ( checkChar === '<' ) {
-
-							if ( subText.charAt( checkIndex + 1 ) !== '/' ) startNum++;
-
-						} else if ( checkChar === '/' ) {
-
-							if (
-								subText.charAt( checkIndex - 1 ) === '<' ||
-								subText.charAt( checkIndex + 1 ) === '>'
-							) endNum++;
-
-						}
-
-						if ( startNum === 0 && endNum === 1 ) return null;
-
-						if ( startNum !== 0 && startNum === endNum ) {
-
-							index1 = checkIndex;
-							break;
-
-						}
-
-						checkIndex++;
-
-					}
-
-					// 进入下一轮搜索
-
-					index1 = subText.indexOf( '>', index1 );
-
-				}
-
-				if ( match ) {
-					return subText.slice( 0, index0 )  + element + subText.slice( index1 + 1 );
-				} else {
-					return subText;
-				}
-
-			} else {
-				return subText;
-			}
-
-		}
-
-		/**
-		 * ### 使用方式：
-		 * ```js
-		 * deleteElementByTag( 'scene' );
-		 * // 从读取到的字符串`text`中删除指定的标签：
-		 * // `up_axis/visual_scene/asset/scene/library_.../unit/instance_visual_scene`
-		 * ```
-		 *
-		 * ### 参数：
-		 * `tag` 要删除的标签名称
-		 *
-		 * ### 返回：
-		 * 无
-		 */
-
-		function deleteElementByTag( tag ) {
-
-			if (
-				tag === 'up_axis' || tag === 'visual_scene' ||
-				tag === 'asset' || tag === 'scene' ||
-				tag.indexOf( 'library' ) !== -1
-			) {
-
-				index0 = text.indexOf( '<' + tag );
-
-				if ( index0 === -1 ) {
-
-					console.log( 'deleteElementByTag can not find tag, tag:', tag );
-					return null;
-
-				}
-
-				index1 = text.indexOf( '</' + tag + '>' ) + tag.length + 3;
-				text = text.slice( 0, index0 ) + text.slice( index1 );
-
-			} else if (
-				tag === 'unit' || tag === 'instance_visual_scene'
-			) {
-
-				index0 = text.indexOf( '<' + tag );
-
-				if ( index0 === -1 ) {
-
-					console.log( 'deleteElementByTag can not find tag, tag:', tag );
-					return null;
-
-				}
-
-				index1 = text.indexOf( '/>', index0 ) + 2;
-				text = text.slice( 0, index0 ) + text.slice( index1 );
-
-			} else {
-
-				console.log( 'deleteElementByTag can not find tag, tag:', tag );
-
-			}
+			return array;
 
 		}
 
@@ -668,55 +152,41 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 		function parseAsset( xml ) {
 
 			return {
-				unit: parseAssetUnit( getElementByTag( 'unit', false, 0, xml ) ),
-				upAxis: parseAssetUpAxis( getElementByTag( 'up_axis', true, 0, xml ) )
+				unit: parseAssetUnit( getElementsByTagName( xml, 'unit' )[ 0 ] ),
+				upAxis: parseAssetUpAxis( getElementsByTagName( xml, 'up_axis' )[ 0 ] )
 			};
 
 		}
 
 		function parseAssetUnit( xml ) {
 
-			var unit = getDataByElement( xml, 'attribute', 'meter' );
-			return unit !== null ? parseFloat( unit ) : 1;
+			return xml !== undefined ? parseFloat( xml.getAttribute( 'meter' ) ) : 1;
 
 		}
 
 		function parseAssetUpAxis( xml ) {
 
-			var axis = getDataByElement( xml, 'content' );
-			return axis !== null ? axis : 'Y_UP';
+			return xml !== undefined ? xml.textContent : 'Y_UP';
 
 		}
 
 		// library
 
-		function parseLibrary( libraryName, nodeName, parser ) {
+		function parseLibrary( xml, libraryName, nodeName, parser ) {
 
-			var library = getElementByTag( libraryName, true, 0 );
+			var library = getElementsByTagName( xml, libraryName )[ 0 ];
 
-			if ( library !== null ) {
+			if ( library !== undefined ) {
 
-				var index = 0, element;
+				var elements = getElementsByTagName( library, nodeName );
 
-				while ( true ) {
+				for ( var i = 0; i < elements.length; i ++ ) {
 
-					element = getElementByTag( nodeName, true, index, library );
-
-					if ( element ) {
-
-						parser( element );
-						index++;
-						// if ( nodeName === 'visual_scene' ) break;
-
-					} else {
-						break;
-					}
+					parser( elements[ i ] );
 
 				}
 
 			}
-
-			// if ( libraryName !== 'scene' ) deleteElementByTag( libraryName );
 
 		}
 
@@ -753,58 +223,39 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 				channels: {}
 			};
 
-			var index = 0, element;
+			for ( var i = 0, l = xml.childNodes.length; i < l; i ++ ) {
 
-			while ( true ) {
+				var child = xml.childNodes[ i ];
 
-				element = getElementByTag( 'source', true, index, xml );
+				if ( child.nodeType !== 1 ) continue;
 
-				if ( element ) {
+				var id;
 
-					data.sources[ getDataByElement( element, 'attribute', 'id' ) ] = parseSource( element );
-					index++;
+				switch ( child.nodeName ) {
 
-				} else {
-					break;
+					case 'source':
+						id = child.getAttribute( 'id' );
+						data.sources[ id ] = parseSource( child );
+						break;
+
+					case 'sampler':
+						id = child.getAttribute( 'id' );
+						data.samplers[ id ] = parseAnimationSampler( child );
+						break;
+
+					case 'channel':
+						id = child.getAttribute( 'target' );
+						data.channels[ id ] = parseAnimationChannel( child );
+						break;
+
+					default:
+						console.log( child );
+
 				}
 
 			}
 
-			index = 0;
-
-			while ( true ) {
-
-				element = getElementByTag( 'sampler', true, index, xml );
-
-				if ( element ) {
-
-					data.samplers[ getDataByElement( element, 'attribute', 'id' ) ] = parseAnimationSampler( element );
-					index++;
-
-				} else {
-					break;
-				}
-
-			}
-
-			index = 0;
-
-			while ( true ) {
-
-				element = getElementByTag( 'channel', true, index, xml );
-
-				if ( element ) {
-
-					data.channels[ getDataByElement( element, 'attribute', 'target' ) ] = parseAnimationChannel( element );
-					index++;
-
-				} else {
-					break;
-				}
-
-			}
-
-			library.animations[ getDataByElement( xml, 'attribute', 'id' ) ] = data;
+			library.animations[ xml.getAttribute( 'id' ) ] = data;
 
 		}
 
@@ -814,21 +265,25 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 				inputs: {},
 			};
 
-			var index = 0, element;
+			for ( var i = 0, l = xml.childNodes.length; i < l; i ++ ) {
 
-			while ( true ) {
+				var child = xml.childNodes[ i ];
 
-				element = getElementByTag( 'input', false, index, xml );
+				if ( child.nodeType !== 1 ) continue;
 
-				if ( element ) {
+				switch ( child.nodeName ) {
 
-					data.inputs[ getDataByElement( element, 'attribute', 'semantic' ) ] = parseId( getDataByElement( element, 'attribute', 'source' ) );
-					index++;
+					case 'input':
+						var id = parseId( child.getAttribute( 'source' ) );
+						var semantic = child.getAttribute( 'semantic' );
+						data.inputs[ semantic ] = id;
+						break;
 
-				} else {
-					return data;
 				}
+
 			}
+
+			return data;
 
 		}
 
@@ -836,7 +291,7 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 
 			var data = {};
 
-			var target = getDataByElement( xml, 'attribute', 'target' );
+			var target = xml.getAttribute( 'target' );
 
 			// parsing SID Addressing Syntax
 
@@ -881,7 +336,7 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 			data.arraySyntax = arraySyntax;
 			data.memberSyntax = memberSyntax;
 
-			data.sampler = parseId( getDataByElement( xml, 'attribute', 'source' ) );
+			data.sampler = parseId( xml.getAttribute( 'source' ) );
 
 			return data;
 
@@ -1206,29 +661,29 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 		function parseAnimationClip( xml ) {
 
 			var data = {
-				name: getDataByElement( xml, 'attribute', 'id' ) || 'default',
-				start: parseFloat( getDataByElement( xml, 'attribute', 'start' ) || 0 ),
-				end: parseFloat( getDataByElement( xml, 'attribute', 'end' ) || 0 ),
+				name: xml.getAttribute( 'id' ) || 'default',
+				start: parseFloat( xml.getAttribute( 'start' ) || 0 ),
+				end: parseFloat( xml.getAttribute( 'end' ) || 0 ),
 				animations: []
 			};
 
-			var index = 0, element;
+			for ( var i = 0, l = xml.childNodes.length; i < l; i ++ ) {
 
-			while ( true ) {
+				var child = xml.childNodes[ i ];
 
-				element = getElementByTag( 'instance_animation', false, index, xml );
+				if ( child.nodeType !== 1 ) continue;
 
-				if ( element ) {
+				switch ( child.nodeName ) {
 
-					data.animations.push( parseId( getDataByElement( element, 'attribute', 'url' ) ) );
-					index++;
+					case 'instance_animation':
+						data.animations.push( parseId( child.getAttribute( 'url' ) ) );
+						break;
 
-				} else {
-					break;
 				}
+
 			}
 
-			library.clips[ getDataByElement( xml, 'attribute', 'id') ] = data;
+			library.clips[ xml.getAttribute( 'id' ) ] = data;
 
 		}
 
@@ -1268,43 +723,30 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 
 			var data = {};
 
-			var index = 0, element;
+			for ( var i = 0, l = xml.childNodes.length; i < l; i ++ ) {
 
-			while ( true ) {
+				var child = xml.childNodes[ i ];
 
-				element = getElementByTag( 'skin', false, index, xml );
+				if ( child.nodeType !== 1 ) continue;
 
-				if ( element ) {
+				switch ( child.nodeName ) {
 
-					data.id = parseId( getDataByElement( element, 'attribute', 'source' ) );
-					data.skin = parseSkin( element );
-					index++;
+					case 'skin':
+						// there is exactly one skin per controller
+						data.id = parseId( child.getAttribute( 'source' ) );
+						data.skin = parseSkin( child );
+						break;
 
-				} else {
-					break;
+					case 'morph':
+						data.id = parseId( child.getAttribute( 'source' ) );
+						console.warn( 'THREE.ColladaLoader: Morph target animation not supported yet.' );
+						break;
+
 				}
 
 			}
 
-			index = 0;
-
-			while ( true ) {
-
-				element = getElementByTag( 'morph', false, index, xml );
-
-				if ( element ) {
-
-					data.id = parseId( getDataByElement( element, 'attribute', 'source' ) );
-					console.warn( 'THREE.ColladaLoader: Morph target animation not supported yet.' );
-					index++;
-
-				} else {
-					break;
-				}
-
-			}
-
-			library.controllers[ getDataByElement( xml, 'attribute', 'id' ) ] = data;
+			library.controllers[ xml.getAttribute( 'id' ) ] = data;
 
 		}
 
@@ -1314,70 +756,31 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 				sources: {}
 			};
 
-			var index = 0, element;
+			for ( var i = 0, l = xml.childNodes.length; i < l; i ++ ) {
 
-			while ( true ) {
+				var child = xml.childNodes[ i ];
 
-				element = getElementByTag( 'bind_shape_matrix', true, index, xml );
+				if ( child.nodeType !== 1 ) continue;
 
-				if ( element ) {
+				switch ( child.nodeName ) {
 
-					data.bindShapeMatrix = parseFloats( getDataByElement( element, 'content' ) );
-					index++;
+					case 'bind_shape_matrix':
+						data.bindShapeMatrix = parseFloats( child.textContent );
+						break;
 
-				} else {
-					break;
-				}
+					case 'source':
+						var id = child.getAttribute( 'id' );
+						data.sources[ id ] = parseSource( child );
+						break;
 
-			}
+					case 'joints':
+						data.joints = parseJoints( child );
+						break;
 
-			index = 0;
+					case 'vertex_weights':
+						data.vertexWeights = parseVertexWeights( child );
+						break;
 
-			while ( true ) {
-
-				element = getElementByTag( 'source', true, index, xml );
-
-				if ( element ) {
-
-					data.sources[ getDataByElement( element, 'attribute', 'id' ) ] = parseSource( element );
-					index++;
-
-				} else {
-					break;
-				}
-
-			}
-
-			index = 0;
-
-			while ( true ) {
-
-				element = getElementByTag( 'joints', true, index, xml );
-
-				if ( element ) {
-
-					data.joints = parseJoints( element );
-					index++;
-
-				} else {
-					break;
-				}
-
-			}
-
-			index = 0;
-
-			while ( true ) {
-
-				element = getElementByTag( 'vertex_weights', true, index, xml );
-
-				if ( element ) {
-
-					data.vertexWeights = parseVertexWeights( element );
-					index++;
-
-				} else {
-					break;
 				}
 
 			}
@@ -1392,20 +795,22 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 				inputs: {}
 			};
 
-			var index = 0, element;
+			for ( var i = 0, l = xml.childNodes.length; i < l; i ++ ) {
 
-			while ( true ) {
+				var child = xml.childNodes[ i ];
 
-				element = getElementByTag( 'input', false, index, xml );
+				if ( child.nodeType !== 1 ) continue;
 
-				if ( element ) {
+				switch ( child.nodeName ) {
 
-					data.inputs[ getDataByElement( element, 'attribute', 'semantic' ) ] = parseId( getDataByElement( element, 'attribute', 'source' ) );
-					index++;
+					case 'input':
+						var semantic = child.getAttribute( 'semantic' );
+						var id = parseId( child.getAttribute( 'source' ) );
+						data.inputs[ semantic ] = id;
+						break;
 
-				} else {
-					break;
 				}
+
 			}
 
 			return data;
@@ -1418,58 +823,29 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 				inputs: {}
 			};
 
-			var index = 0, element;
+			for ( var i = 0, l = xml.childNodes.length; i < l; i ++ ) {
 
-			while ( true ) {
+				var child = xml.childNodes[ i ];
 
-				element = getElementByTag( 'input', false, index, xml );
+				if ( child.nodeType !== 1 ) continue;
 
-				if ( element ) {
+				switch ( child.nodeName ) {
 
-					data.inputs[ getDataByElement( element, 'attribute', 'semantic' ) ] = {
+					case 'input':
+						var semantic = child.getAttribute( 'semantic' );
+						var id = parseId( child.getAttribute( 'source' ) );
+						var offset = parseInt( child.getAttribute( 'offset' ) );
+						data.inputs[ semantic ] = { id: id, offset: offset };
+						break;
 
-						id: parseId( getDataByElement( element, 'attribute', 'source' ) ),
-						offset: parseInt( getDataByElement( element, 'attribute', 'offset' ) )
+					case 'vcount':
+						data.vcount = parseInts( child.textContent );
+						break;
 
-					};
-					index++;
+					case 'v':
+						data.v = parseInts( child.textContent );
+						break;
 
-				} else {
-					break;
-				}
-
-			}
-
-			index = 0;
-
-			while ( true ) {
-
-				element = getElementByTag( 'vcount', true, index, xml );
-
-				if ( element ) {
-
-					data.vcount = parseInts( getDataByElement( element, 'content' ) );
-					index++;
-
-				} else {
-					break;
-				}
-
-			}
-
-			index = 0;
-
-			while ( true ) {
-
-				element = getElementByTag( 'v', true, index, xml );
-
-				if ( element ) {
-
-					data.v = parseInts( getDataByElement( element, 'content' ) );
-					index++;
-
-				} else {
-					break;
 				}
 
 			}
@@ -1617,12 +993,11 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 
 		function parseImage( xml ) {
 
-			var initTag = getElementByTag( 'init_from', true, 0, xml );
 			var data = {
-				init_from: getDataByElement( initTag, 'content' )
+				init_from: getElementsByTagName( xml, 'init_from' )[ 0 ].textContent
 			};
 
-			library.images[ getDataByElement( xml, 'attribute', 'id' ) ] = data;
+			library.images[ xml.getAttribute( 'id' ) ] = data;
 
 		}
 
@@ -1646,24 +1021,23 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 
 			var data = {};
 
-			var index = 0, element;
+			for ( var i = 0, l = xml.childNodes.length; i < l; i ++ ) {
 
-			while ( true ) {
+				var child = xml.childNodes[ i ];
 
-				element = getElementByTag( 'profile_COMMON', true, index, xml );
+				if ( child.nodeType !== 1 ) continue;
 
-				if ( element ) {
+				switch ( child.nodeName ) {
 
-					data.profile = parseEffectProfileCOMMON( element );
-					index++;
+					case 'profile_COMMON':
+						data.profile = parseEffectProfileCOMMON( child );
+						break;
 
-				} else {
-					break;
 				}
 
 			}
 
-			library.effects[ getDataByElement( xml, 'attribute', 'id' ) ] = data;
+			library.effects[ xml.getAttribute( 'id' ) ] = data;
 
 		}
 
@@ -1674,36 +1048,22 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 				samplers: {}
 			};
 
-			var index = 0, element;
+			for ( var i = 0, l = xml.childNodes.length; i < l; i ++ ) {
 
-			while ( true ) {
+				var child = xml.childNodes[ i ];
 
-				element = getElementByTag( 'newparam', true, index, xml );
+				if ( child.nodeType !== 1 ) continue;
 
-				if ( element ) {
+				switch ( child.nodeName ) {
 
-					parseEffectNewparam( element, data );
-					index++;
+					case 'newparam':
+						parseEffectNewparam( child, data );
+						break;
 
-				} else {
-					break;
-				}
+					case 'technique':
+						data.technique = parseEffectTechnique( child );
+						break;
 
-			}
-
-			index = 0;
-
-			while ( true ) {
-
-				element = getElementByTag( 'technique', true, index, xml );
-
-				if ( element ) {
-
-					data.technique = parseEffectTechnique( element );
-					index++;
-
-				} else {
-					break;
 				}
 
 			}
@@ -1714,38 +1074,24 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 
 		function parseEffectNewparam( xml, data ) {
 
-			var sid = getDataByElement( xml, 'attribute', 'sid' );
+			var sid = xml.getAttribute( 'sid' );
 
-			var index = 0, element;
+			for ( var i = 0, l = xml.childNodes.length; i < l; i ++ ) {
 
-			while ( true ) {
+				var child = xml.childNodes[ i ];
 
-				element = getElementByTag( 'surface', true, index, xml );
+				if ( child.nodeType !== 1 ) continue;
 
-				if ( element ) {
+				switch ( child.nodeName ) {
 
-					data.surfaces[ sid ] = parseEffectSurface( element );
-					index++;
+					case 'surface':
+						data.surfaces[ sid ] = parseEffectSurface( child );
+						break;
 
-				} else {
-					break;
-				}
+					case 'sampler2D':
+						data.samplers[ sid ] = parseEffectSampler( child );
+						break;
 
-			}
-
-			index = 0;
-
-			while ( true ) {
-
-				element = getElementByTag( 'sampler2D', true, index, xml );
-
-				if ( element ) {
-
-					data.samplers[ sid ] = parseEffectSampler( element );
-					index++;
-
-				} else {
-					break;
 				}
 
 			}
@@ -1756,19 +1102,18 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 
 			var data = {};
 
-			var index = 0, element;
+			for ( var i = 0, l = xml.childNodes.length; i < l; i ++ ) {
 
-			while ( true ) {
+				var child = xml.childNodes[ i ];
 
-				element = getElementByTag( 'init_from', false, index, xml );
+				if ( child.nodeType !== 1 ) continue;
 
-				if ( element ) {
+				switch ( child.nodeName ) {
 
-					data.init_from = getDataByElement( element, 'content' );
-					index++;
+					case 'init_from':
+						data.init_from = child.textContent;
+						break;
 
-				} else {
-					break;
 				}
 
 			}
@@ -1781,19 +1126,18 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 
 			var data = {};
 
-			var index = 0, element;
+			for ( var i = 0, l = xml.childNodes.length; i < l; i ++ ) {
 
-			while ( true ) {
+				var child = xml.childNodes[ i ];
 
-				element = getElementByTag( 'source', true, index, xml );
+				if ( child.nodeType !== 1 ) continue;
 
-				if ( element ) {
+				switch ( child.nodeName ) {
 
-					data.source = getDataByElement( element, 'content' );
-					index++;
+					case 'source':
+						data.source = child.textContent;
+						break;
 
-				} else {
-					break;
 				}
 
 			}
@@ -1806,77 +1150,22 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 
 			var data = {};
 
-			function ok( type, child ) {
+			for ( var i = 0, l = xml.childNodes.length; i < l; i ++ ) {
 
-				data.type = type;
-				data.parameters = parseEffectParameters( child );
+				var child = xml.childNodes[ i ];
 
-			}
+				if ( child.nodeType !== 1 ) continue;
 
-			var index = 0, element;
+				switch ( child.nodeName ) {
 
-			while ( true ) {
+					case 'constant':
+					case 'lambert':
+					case 'blinn':
+					case 'phong':
+						data.type = child.nodeName;
+						data.parameters = parseEffectParameters( child );
+						break;
 
-				element = getElementByTag( 'constant', true, index, xml );
-
-				if ( element ) {
-
-					ok( 'constant', element );
-					index++;
-
-				} else {
-					break;
-				}
-
-			}
-
-			index = 0;
-
-			while ( true ) {
-
-				element = getElementByTag( 'lambert', true, index, xml );
-
-				if ( element ) {
-
-					ok( 'lambert', element );
-					index++;
-
-				} else {
-					break;
-				}
-
-			}
-
-			index = 0;
-
-			while ( true ) {
-
-				element = getElementByTag( 'blinn', true, index, xml );
-
-				if ( element ) {
-
-					ok( 'blinn', element );
-					index++;
-
-				} else {
-					break;
-				}
-
-			}
-
-			index = 0;
-
-			while ( true ) {
-
-				element = getElementByTag( 'phong', true, index, xml );
-
-				if ( element ) {
-
-					ok( 'phong', element );
-					index++;
-
-				} else {
-					break;
 				}
 
 			}
@@ -1889,35 +1178,26 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 
 			var data = {};
 
-			var index = 0, element;
+			for ( var i = 0, l = xml.childNodes.length; i < l; i ++ ) {
 
-			function get( name ) {
+				var child = xml.childNodes[ i ];
 
-				index = 0;
+				if ( child.nodeType !== 1 ) continue;
 
-				while ( true ) {
+				switch ( child.nodeName ) {
 
-					element = getElementByTag( name, true, index, xml );
-
-					if ( element ) {
-
-						data[ name ] = parseEffectParameter( element );
-						index++;
-
-					} else {
+					case 'emission':
+					case 'diffuse':
+					case 'specular':
+					case 'shininess':
+					case 'transparent':
+					case 'transparency':
+						data[ child.nodeName ] = parseEffectParameter( child );
 						break;
-					}
 
 				}
 
 			}
-
-			get( 'emission' );
-			get( 'diffuse' );
-			get( 'specular' );
-			get( 'shininess' );
-			get( 'transparent' );
-			get( 'transparency' );
 
 			return data;
 
@@ -1927,50 +1207,29 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 
 			var data = {};
 
-			var index = 0, element;
+			for ( var i = 0, l = xml.childNodes.length; i < l; i ++ ) {
 
-			function getData( name ) {
+				var child = xml.childNodes[ i ];
 
-				index = 0;
+				if ( child.nodeType !== 1 ) continue;
 
-				while ( true ) {
+				switch ( child.nodeName ) {
 
-					element = getElementByTag( name, name === 'texture' ? false : true, index, xml );
-
-					if ( element ) {
-
-						switch ( name ) {
-
-							case 'color':
-								data[ name ] = parseFloats( getDataByElement( element, 'content' ) );
-								break;
-
-							case 'float':
-								data[ name ] = parseFloat( getDataByElement( element, 'content' ) );
-								break;
-
-							case 'texture':
-								data[ name ] = {
-									id: getDataByElement( element, 'attribute', 'texture' ),
-									extra: parseEffectParameterTexture( element )
-								};
-								break;
-
-						}
-
-						index++;
-
-					} else {
+					case 'color':
+						data[ child.nodeName ] = parseFloats( child.textContent );
 						break;
-					}
+
+					case 'float':
+						data[ child.nodeName ] = parseFloat( child.textContent );
+						break;
+
+					case 'texture':
+						data[ child.nodeName ] = { id: child.getAttribute( 'texture' ), extra: parseEffectParameterTexture( child ) };
+						break;
 
 				}
 
 			}
-
-			getData( 'color' );
-			getData( 'float' );
-			getData( 'texture' );
 
 			return data;
 
@@ -1982,30 +1241,21 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 				technique: {}
 			};
 
-			var index = 0, element;
+			for ( var i = 0, l = xml.childNodes.length; i < l; i ++ ) {
 
-			function getData( name ) {
+				var child = xml.childNodes[ i ];
 
-				index = 0;
+				if ( child.nodeType !== 1 ) continue;
 
-				while ( true ) {
+				switch ( child.nodeName ) {
 
-					element = getElementByTag( name, true, index, xml );
-
-					if ( element ) {
-
-						parseEffectParameterTextureExtra( element, data );
-						index++;
-
-					} else {
+					case 'extra':
+						parseEffectParameterTextureExtra( child, data );
 						break;
-					}
 
 				}
 
 			}
-
-			getData( 'extra' );
 
 			return data;
 
@@ -2013,95 +1263,65 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 
 		function parseEffectParameterTextureExtra( xml, data ) {
 
-			var index = 0, element;
+			for ( var i = 0, l = xml.childNodes.length; i < l; i ++ ) {
 
-			function getData( name ) {
+				var child = xml.childNodes[ i ];
 
-				index = 0;
+				if ( child.nodeType !== 1 ) continue;
 
-				while ( true ) {
+				switch ( child.nodeName ) {
 
-					element = getElementByTag( name, true, index, xml );
-
-					if ( element ) {
-
-						parseEffectParameterTextureExtraTechnique( element, data );
-						index++;
-
-					} else {
+					case 'technique':
+						parseEffectParameterTextureExtraTechnique( child, data );
 						break;
-					}
 
 				}
 
 			}
-
-			getData( 'technique' );
 
 		}
 
 		function parseEffectParameterTextureExtraTechnique( xml, data ) {
 
-			var index = 0, element;
+			for ( var i = 0, l = xml.childNodes.length; i < l; i ++ ) {
 
-			function getData( name ) {
+				var child = xml.childNodes[ i ];
 
-				index = 0;
+				if ( child.nodeType !== 1 ) continue;
 
-				while ( true ) {
+				switch ( child.nodeName ) {
 
-					element = getElementByTag( name, true, index, xml );
+					case 'repeatU':
+					case 'repeatV':
+					case 'offsetU':
+					case 'offsetV':
+						data.technique[ child.nodeName ] = parseFloat( child.textContent );
+						break;
 
-					if ( element ) {
+					case 'wrapU':
+					case 'wrapV':
 
-						switch ( name ) {
+						// some files have values for wrapU/wrapV which become NaN via parseInt
 
-							case 'repeatU':
-							case 'repeatV':
-							case 'offsetU':
-							case 'offsetV':
-								data.technique[ name ] = parseFloat( getDataByElement( element, 'content' ) );
-								break;
+						if ( child.textContent.toUpperCase() === 'TRUE' ) {
 
-							case 'wrapU':
-							case 'wrapV':
+							data.technique[ child.nodeName ] = 1;
 
-								// some files have values for wrapU/wrapV which become NaN via parseInt
+						} else if ( child.textContent.toUpperCase() === 'FALSE' ) {
 
-								if ( getDataByElement( element, 'content' ).toUpperCase() === 'TRUE' ) {
+							data.technique[ child.nodeName ] = 0;
 
-									data.technique[ name ] = 1;
+						} else {
 
-								} else if ( getDataByElement( element, 'content' ).toUpperCase() === 'FALSE' ) {
-
-									data.technique[ name ] = 0;
-
-								} else {
-
-									data.technique[ name ] = parseInt( getDataByElement( element, 'content' ) );
-
-								}
-
-								break;
+							data.technique[ child.nodeName ] = parseInt( child.textContent );
 
 						}
 
-						index++;
-
-					} else {
 						break;
-					}
 
 				}
 
 			}
-
-			getData( 'repeatU' );
-			getData( 'repeatV' );
-			getData( 'offsetU' );
-			getData( 'offsetV' );
-			getData( 'wrapU' );
-			getData( 'wrapV' );
 
 		}
 
@@ -2122,27 +1342,26 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 		function parseMaterial( xml ) {
 
 			var data = {
-				name: getDataByElement( xml, 'attribute', 'name' )
+				name: xml.getAttribute( 'name' )
 			};
 
-			var index = 0, element;
+			for ( var i = 0, l = xml.childNodes.length; i < l; i ++ ) {
 
-			while ( true ) {
+				var child = xml.childNodes[ i ];
 
-				element = getElementByTag( 'instance_effect', false, index, xml );
+				if ( child.nodeType !== 1 ) continue;
 
-				if ( element ) {
+				switch ( child.nodeName ) {
 
-					data.url = parseId( getDataByElement( element, 'attribute', 'url' ) );
-					index++;
+					case 'instance_effect':
+						data.url = parseId( child.getAttribute( 'url' ) );
+						break;
 
-				} else {
-					break;
 				}
 
 			}
 
-			library.materials[ getDataByElement( xml, 'attribute', 'id' ) ] = data;
+			library.materials[ xml.getAttribute( 'id' ) ] = data;
 
 		}
 
@@ -2263,44 +1482,40 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 		function parseCamera( xml ) {
 
 			var data = {
-				name: getDataByElement( xml, 'attribute', 'name' )
+				name: xml.getAttribute( 'name' )
 			};
 
-			var index = 0, element;
+			for ( var i = 0, l = xml.childNodes.length; i < l; i ++ ) {
 
-			while ( true ) {
+				var child = xml.childNodes[ i ];
 
-				element = getElementByTag( 'optics', true, index, xml );
+				if ( child.nodeType !== 1 ) continue;
 
-				if ( element ) {
+				switch ( child.nodeName ) {
 
-					data.optics = parseCameraOptics( element );
-					index++;
+					case 'optics':
+						data.optics = parseCameraOptics( child );
+						break;
 
-				} else {
-					break;
 				}
 
 			}
 
-			library.cameras[ getDataByElement( xml, 'attribute', 'id' ) ] = data;
+			library.cameras[ xml.getAttribute( 'id' ) ] = data;
 
 		}
 
 		function parseCameraOptics( xml ) {
 
-			var index = 0, element;
+			for ( var i = 0; i < xml.childNodes.length; i ++ ) {
 
-			while ( true ) {
+				var child = xml.childNodes[ i ];
 
-				element = getElementByTag( 'technique_common', true, index, xml );
+				switch ( child.nodeName ) {
 
-				if ( element ) {
+					case 'technique_common':
+						return parseCameraTechnique( child );
 
-					return parseCameraTechnique( element );
-
-				} else {
-					break;
 				}
 
 			}
@@ -2313,32 +1528,23 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 
 			var data = {};
 
-			var index = 0, element;
+			for ( var i = 0; i < xml.childNodes.length; i ++ ) {
 
-			function getData( name ) {
+				var child = xml.childNodes[ i ];
 
-				index = 0;
+				switch ( child.nodeName ) {
 
-				while ( true ) {
+					case 'perspective':
+					case 'orthographic':
 
-					element = getElementByTag( name, true, index, xml );
+						data.technique = child.nodeName;
+						data.parameters = parseCameraParameters( child );
 
-					if ( element ) {
-
-						data.technique = name;
-						data.parameters = parseCameraParameters( element );
-						index++;
-
-					} else {
 						break;
-					}
 
 				}
 
 			}
-
-			getData( 'perspective' );
-			getData( 'orthographic' );
 
 			return data;
 
@@ -2348,36 +1554,25 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 
 			var data = {};
 
-			var index = 0, element;
+			for ( var i = 0; i < xml.childNodes.length; i ++ ) {
 
-			function getData( name ) {
+				var child = xml.childNodes[ i ];
 
-				index = 0;
+				switch ( child.nodeName ) {
 
-				while ( true ) {
-
-					element = getElementByTag( name, true, index, xml );
-
-					if ( element ) {
-
-						data[ name ] = parseFloat( getDataByElement( element, 'content' ) );
-						index++;
-
-					} else {
+					case 'xfov':
+					case 'yfov':
+					case 'xmag':
+					case 'ymag':
+					case 'znear':
+					case 'zfar':
+					case 'aspect_ratio':
+						data[ child.nodeName ] = parseFloat( child.textContent );
 						break;
-					}
 
 				}
 
 			}
-
-			getData( 'xfov' );
-			getData( 'yfov' );
-			getData( 'xmag' );
-			getData( 'ymag' );
-			getData( 'znear' );
-			getData( 'zfar' );
-			getData( 'aspect_ratio' );
 
 			return data;
 
@@ -2450,24 +1645,23 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 
 			var data = {};
 
-			var index = 0, element;
+			for ( var i = 0, l = xml.childNodes.length; i < l; i ++ ) {
 
-			while ( true ) {
+				var child = xml.childNodes[ i ];
 
-				element = getElementByTag( 'technique_common', true, index, xml );
+				if ( child.nodeType !== 1 ) continue;
 
-				if ( element ) {
+				switch ( child.nodeName ) {
 
-					data = parseLightTechnique( element );
-					index++;
+					case 'technique_common':
+						data = parseLightTechnique( child );
+						break;
 
-				} else {
-					break;
 				}
 
 			}
 
-			library.lights[ getDataByElement( xml, 'attribute', 'id' ) ] = data;
+			library.lights[ xml.getAttribute( 'id' ) ] = data;
 
 		}
 
@@ -2475,44 +1669,25 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 
 			var data = {};
 
-			var index = 0, element;
+			for ( var i = 0, l = xml.childNodes.length; i < l; i ++ ) {
 
-			function getData( name ) {
+				var child = xml.childNodes[ i ];
 
-				index = 0;
+				if ( child.nodeType !== 1 ) continue;
 
-				while ( true ) {
+				switch ( child.nodeName ) {
 
-					element = getElementByTag( name, true, index, xml );
+					case 'directional':
+					case 'point':
+					case 'spot':
+					case 'ambient':
 
-					if ( element ) {
-
-						switch ( name ) {
-
-							case 'directional':
-							case 'point':
-							case 'spot':
-							case 'ambient':
-
-								data.technique = name;
-								data.parameters = parseLightParameters( element );
-
-						}
-
-						index++;
-
-					} else {
-						break;
-					}
+						data.technique = child.nodeName;
+						data.parameters = parseLightParameters( child );
 
 				}
 
 			}
-
-			getData( 'directional' );
-			getData( 'point' );
-			getData( 'spot' );
-			getData( 'ambient' );
 
 			return data;
 
@@ -2522,49 +1697,31 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 
 			var data = {};
 
-			var index = 0, element;
+			for ( var i = 0, l = xml.childNodes.length; i < l; i ++ ) {
 
-			function getData( name ) {
+				var child = xml.childNodes[ i ];
 
-				index = 0;
+				if ( child.nodeType !== 1 ) continue;
 
-				while ( true ) {
+				switch ( child.nodeName ) {
 
-					element = getElementByTag( name, true, index, xml );
-
-					if ( element ) {
-
-						switch ( name ) {
-
-							case 'color':
-								var array = parseFloats( getDataByElement( element, 'content' ) );
-								data.color = new THREE.Color().fromArray( array );
-								break;
-
-							case 'falloff_angle':
-								data.falloffAngle = parseFloat( getDataByElement( element, 'content' ) );
-								break;
-
-							case 'quadratic_attenuation':
-								var f = parseFloat( getDataByElement( element, 'content' ) );
-								data.distance = f ? Math.sqrt( 1 / f ) : 0;
-								break;
-
-						}
-
-						index++;
-
-					} else {
+					case 'color':
+						var array = parseFloats( child.textContent );
+						data.color = new THREE.Color().fromArray( array );
 						break;
-					}
+
+					case 'falloff_angle':
+						data.falloffAngle = parseFloat( child.textContent );
+						break;
+
+					case 'quadratic_attenuation':
+						var f = parseFloat( child.textContent );
+						data.distance = f ? Math.sqrt( 1 / f ) : 0;
+						break;
 
 				}
 
 			}
-
-			getData( 'color' );
-			getData( 'falloff_angle' );
-			getData( 'quadratic_attenuation' );
 
 			return data;
 
@@ -2622,78 +1779,55 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 		function parseGeometry( xml ) {
 
 			var data = {
-				name: getDataByElement( xml, 'attribute', 'name' ) || '',
+				name: xml.getAttribute( 'name' ),
 				sources: {},
 				vertices: {},
 				primitives: []
 			};
 
-			var mesh = getElementByTag( 'mesh', true, 0, xml );
+			var mesh = getElementsByTagName( xml, 'mesh' )[ 0 ];
 
 			// the following tags inside geometry are not supported yet (see https://github.com/mrdoob/three.js/pull/12606): convex_mesh, spline, brep
-			if ( mesh === null ) return;
+			if ( mesh === undefined ) return;
 
-			var index = 0, element, id;
+			for ( var i = 0; i < mesh.childNodes.length; i ++ ) {
 
-			function getData( name ) {
+				var child = mesh.childNodes[ i ];
 
-				index = 0;
+				if ( child.nodeType !== 1 ) continue;
 
-				while ( true ) {
+				var id = child.getAttribute( 'id' );
 
-					element = getElementByTag( name, true, index, mesh );
+				switch ( child.nodeName ) {
 
-					if ( element ) {
-
-						id = getDataByElement( element, 'attribute', 'id' );
-
-						switch ( name ) {
-
-							case 'source':
-								data.sources[ id ] = parseSource( element );
-								break;
-
-							case 'vertices':
-								// data.sources[ id ] = data.sources[ parseId( getElementsByTagName( child, 'input' )[ 0 ].getAttribute( 'source' ) ) ];
-								data.vertices = parseGeometryVertices( element );
-								break;
-
-							case 'polygons':
-								console.warn( 'THREE.ColladaLoader: Unsupported primitive type: ', name );
-								break;
-
-							case 'lines':
-							case 'linestrips':
-							case 'polylist':
-							case 'triangles':
-								data.primitives.push( parseGeometryPrimitive( element ) );
-								break;
-
-							default:
-								console.log( element );
-
-						}
-
-						index++;
-
-					} else {
+					case 'source':
+						data.sources[ id ] = parseSource( child );
 						break;
-					}
+
+					case 'vertices':
+						// data.sources[ id ] = data.sources[ parseId( getElementsByTagName( child, 'input' )[ 0 ].getAttribute( 'source' ) ) ];
+						data.vertices = parseGeometryVertices( child );
+						break;
+
+					case 'polygons':
+						console.warn( 'THREE.ColladaLoader: Unsupported primitive type: ', child.nodeName );
+						break;
+
+					case 'lines':
+					case 'linestrips':
+					case 'polylist':
+					case 'triangles':
+						data.primitives.push( parseGeometryPrimitive( child ) );
+						break;
+
+					default:
+						console.log( child );
 
 				}
 
 			}
 
-			getData( 'source' );
-			getData( 'vertices' );
-			getData( 'polygons' );
-			getData( 'lines' );
-			getData( 'linestrips' );
-			getData( 'polylist' );
-			getData( 'triangles' );
-
-			library.geometries[ getDataByElement( xml, 'attribute', 'id' ) ] = data;
-			console.log( 'parse library.geometries' );
+			library.geometries[ xml.getAttribute( 'id' ) ] = data;
 
 		}
 
@@ -2704,55 +1838,32 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 				stride: 3
 			};
 
-			var index = 0, element;
+			for ( var i = 0; i < xml.childNodes.length; i ++ ) {
 
-			while ( true ) {
+				var child = xml.childNodes[ i ];
 
-				element = getElementByTag( 'float_array', true, index, xml );
+				if ( child.nodeType !== 1 ) continue;
 
-				if ( element ) {
+				switch ( child.nodeName ) {
 
-					data.array = parseFloats( getDataByElement( element, 'content' ) );
-					index++;
+					case 'float_array':
+						data.array = parseFloats( child.textContent );
+						break;
 
-				} else {
-					break;
-				}
+					case 'Name_array':
+						data.array = parseStrings( child.textContent );
+						break;
 
-			}
+					case 'technique_common':
+						var accessor = getElementsByTagName( child, 'accessor' )[ 0 ];
 
-			index = 0;
+						if ( accessor !== undefined ) {
 
-			while ( true ) {
+							data.stride = parseInt( accessor.getAttribute( 'stride' ) );
 
-				element = getElementByTag( 'Name_array', true, index, xml );
+						}
+						break;
 
-				if ( element ) {
-
-					data.array = parseStrings( getDataByElement( element, 'content' ) );
-					index++;
-
-				} else {
-					break;
-				}
-
-			}
-
-			index = 0;
-
-			while ( true ) {
-
-				element = getElementByTag( 'technique_common', true, index, xml );
-
-				if ( element ) {
-
-					element = getElementByTag( 'accessor', true, 0, element );
-					if ( element ) data.stride = parseInt( getDataByElement( element, 'attribute', 'stride' ) );
-
-					index++;
-
-				} else {
-					break;
 				}
 
 			}
@@ -2765,20 +1876,13 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 
 			var data = {};
 
-			var index = 0, element;
+			for ( var i = 0; i < xml.childNodes.length; i ++ ) {
 
-			while ( true ) {
+				var child = xml.childNodes[ i ];
 
-				element = getElementByTag( 'input', false, index, xml );
+				if ( child.nodeType !== 1 ) continue;
 
-				if ( element ) {
-
-					data[ getDataByElement( element, 'attribute', 'semantic') ] = parseId( getDataByElement( element, 'attribute', 'source') );
-					index++;
-
-				} else {
-					break;
-				}
+				data[ child.getAttribute( 'semantic' ) ] = parseId( child.getAttribute( 'source' ) );
 
 			}
 
@@ -2789,59 +1893,40 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 		function parseGeometryPrimitive( xml ) {
 
 			var primitive = {
-				type: getDataByElement( xml, 'name' ),
-				material: getDataByElement( xml, 'attribute', 'material' ),
-				count: parseInt( getDataByElement( xml, 'attribute', 'count' ) ),
+				type: xml.nodeName,
+				material: xml.getAttribute( 'material' ),
+				count: parseInt( xml.getAttribute( 'count' ) ),
 				inputs: {},
 				stride: 0
 			};
 
-			var index = 0, element;
+			for ( var i = 0, l = xml.childNodes.length; i < l; i ++ ) {
 
-			function getData( name ) {
+				var child = xml.childNodes[ i ];
 
-				index = 0;
+				if ( child.nodeType !== 1 ) continue;
 
-				while ( true ) {
+				switch ( child.nodeName ) {
 
-					element = getElementByTag( name, name === 'input' ? false : true, index, xml );
-
-					if ( element ) {
-
-						switch ( name ) {
-
-							case 'input':
-								var id = parseId( getDataByElement( element, 'attribute', 'source' ) );
-								var semantic = getDataByElement( element, 'attribute', 'semantic' );
-								var offset = parseInt( getDataByElement( element, 'attribute', 'offset' ) );
-								primitive.inputs[ semantic ] = { id: id, offset: offset };
-								primitive.stride = Math.max( primitive.stride, offset + 1 );
-								break;
-
-							case 'vcount':
-								primitive.vcount = parseInts( getDataByElement( element, 'content' ) );
-								break;
-
-							case 'p':
-								primitive.p = parseInts( getDataByElement( element, 'content' ) );
-								break;
-
-
-							}
-
-						index++;
-
-					} else {
+					case 'input':
+						var id = parseId( child.getAttribute( 'source' ) );
+						var semantic = child.getAttribute( 'semantic' );
+						var offset = parseInt( child.getAttribute( 'offset' ) );
+						primitive.inputs[ semantic ] = { id: id, offset: offset };
+						primitive.stride = Math.max( primitive.stride, offset + 1 );
 						break;
-					}
+
+					case 'vcount':
+						primitive.vcount = parseInts( child.textContent );
+						break;
+
+					case 'p':
+						primitive.p = parseInts( child.textContent );
+						break;
 
 				}
 
 			}
-
-			getData( 'input' );
-			getData( 'vcount' );
-			getData( 'p' );
 
 			return primitive;
 
@@ -3123,29 +2208,28 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 		function parseKinematicsModel( xml ) {
 
 			var data = {
-				name: getDataByElement( xml, 'attribute', 'name' ) || '',
+				name: xml.getAttribute( 'name' ) || '',
 				joints: {},
 				links: []
 			};
 
-			var index = 0, element;
+			for ( var i = 0; i < xml.childNodes.length; i ++ ) {
 
-			while ( true ) {
+				var child = xml.childNodes[ i ];
 
-				element = getElementByTag( 'technique_common', false, index, xml );
+				if ( child.nodeType !== 1 ) continue;
 
-				if ( element ) {
+				switch ( child.nodeName ) {
 
-					parseKinematicsTechniqueCommon( element, data );
-					index++;
+					case 'technique_common':
+						parseKinematicsTechniqueCommon( child, data );
+						break;
 
-				} else {
-					break;
 				}
 
 			}
 
-			library.kinematicsModels[ getDataByElement( xml, 'attribute', 'id' ) ] = data;
+			library.kinematicsModels[ xml.getAttribute( 'id' ) ] = data;
 
 		}
 
@@ -3165,36 +2249,22 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 
 		function parseKinematicsTechniqueCommon( xml, data ) {
 
-			var index = 0, element;
+			for ( var i = 0; i < xml.childNodes.length; i ++ ) {
 
-			while ( true ) {
+				var child = xml.childNodes[ i ];
 
-				element = getElementByTag( 'joint', false, index, xml );
+				if ( child.nodeType !== 1 ) continue;
 
-				if ( element ) {
+				switch ( child.nodeName ) {
 
-					data.joints[ getDataByElement( element, 'attribute', 'sid' ) ] = parseKinematicsJoint( element );
-					index++;
+					case 'joint':
+						data.joints[ child.getAttribute( 'sid' ) ] = parseKinematicsJoint( child );
+						break;
 
-				} else {
-					break;
-				}
+					case 'link':
+						data.links.push( parseKinematicsLink( child ) );
+						break;
 
-			}
-
-			index = 0;
-
-			while ( true ) {
-
-				element = getElementByTag( 'link', false, index, xml );
-
-				if ( element ) {
-
-					data.links.push( parseKinematicsLink( element ) );
-					index++;
-
-				} else {
-					break;
 				}
 
 			}
@@ -3205,36 +2275,19 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 
 			var data;
 
-			var index = 0, element;
+			for ( var i = 0; i < xml.childNodes.length; i ++ ) {
 
-			while ( true ) {
+				var child = xml.childNodes[ i ];
 
-				element = getElementByTag( 'prismatic', false, index, xml );
+				if ( child.nodeType !== 1 ) continue;
 
-				if ( element ) {
+				switch ( child.nodeName ) {
 
-					data = parseKinematicsJointParameter( element );
-					index++;
+					case 'prismatic':
+					case 'revolute':
+						data = parseKinematicsJointParameter( child );
+						break;
 
-				} else {
-					break;
-				}
-
-			}
-
-			index = 0;
-
-			while ( true ) {
-
-				element = getElementByTag( 'revolute', false, index, xml );
-
-				if ( element ) {
-
-					data = parseKinematicsJointParameter( element );
-					index++;
-
-				} else {
-					break;
 				}
 
 			}
@@ -3246,54 +2299,39 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 		function parseKinematicsJointParameter( xml, data ) {
 
 			var data = {
-				sid: getDataByElement( xml, 'attribute', 'sid' ),
-				name: getDataByElement( xml, 'attribute', 'name' ) || '',
+				sid: xml.getAttribute( 'sid' ),
+				name: xml.getAttribute( 'name' ) || '',
 				axis: new THREE.Vector3(),
 				limits: {
 					min: 0,
 					max: 0
 				},
-				type: getDataByElement( xml, 'name' ),
+				type: xml.nodeName,
 				static: false,
 				zeroPosition: 0,
 				middlePosition: 0
 			};
 
-			var index = 0, element;
+			for ( var i = 0; i < xml.childNodes.length; i ++ ) {
 
-			while ( true ) {
+				var child = xml.childNodes[ i ];
 
-				element = getElementByTag( 'axis', false, index, xml );
+				if ( child.nodeType !== 1 ) continue;
 
-				if ( element ) {
+				switch ( child.nodeName ) {
 
-					var array = parseFloats( getDataByElement( xml, 'content' ) );
-					data.axis.fromArray( array );
-					index++;
+					case 'axis':
+						var array = parseFloats( child.textContent );
+						data.axis.fromArray( array );
+						break;
+					case 'limits':
+						var max = child.getElementsByTagName( 'max' )[ 0 ];
+						var min = child.getElementsByTagName( 'min' )[ 0 ];
 
-				} else {
-					break;
-				}
+						data.limits.max = parseFloat( max.textContent );
+						data.limits.min = parseFloat( min.textContent );
+						break;
 
-			}
-
-			index = 0;
-
-			while ( true ) {
-
-				element = getElementByTag( 'limits', false, index, xml );
-
-				if ( element ) {
-
-					var max = getElementByTag( 'max', false, 0, element );
-					var min = getElementByTag( 'min', false, 0, element );
-
-					data.limits.max = parseFloat( getDataByElement( max, 'content' ) );
-					data.limits.min = parseFloat( getDataByElement( min, 'content' ) );
-					index++;
-
-				} else {
-					break;
 				}
 
 			}
@@ -3317,52 +2355,33 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 		function parseKinematicsLink( xml ) {
 
 			var data = {
-				sid: getDataByElement( xml, 'attribute', 'sid' ),
-				name: getDataByElement( xml, 'attribute', 'name' ) || '',
+				sid: xml.getAttribute( 'sid' ),
+				name: xml.getAttribute( 'name' ) || '',
 				attachments: [],
 				transforms: []
 			};
 
-			var index = 0, element;
+			for ( var i = 0; i < xml.childNodes.length; i ++ ) {
 
-			function getData( name ) {
+				var child = xml.childNodes[ i ];
 
-				index = 0;
+				if ( child.nodeType !== 1 ) continue;
 
-				while ( true ) {
+				switch ( child.nodeName ) {
 
-					element = getElementByTag( name, false, index, xml );
-
-					if ( element ) {
-
-						switch ( name ) {
-
-							case 'attachment_full':
-								data.attachments.push( parseKinematicsAttachment( element ) );
-								break;
-
-							case 'matrix':
-							case 'translate':
-							case 'rotate':
-								data.transforms.push( parseKinematicsTransform( element ) );
-								break;
-
-						}
-
-						index++;
-
-					} else {
+					case 'attachment_full':
+						data.attachments.push( parseKinematicsAttachment( child ) );
 						break;
-					}
+
+					case 'matrix':
+					case 'translate':
+					case 'rotate':
+						data.transforms.push( parseKinematicsTransform( child ) );
+						break;
 
 				}
 
 			}
-
-			getData( 'attachment_full' );
-			getData( 'matrix' );
-			getData( 'translate' );
-			getData( 'rotate' );
 
 			return data;
 
@@ -3371,51 +2390,32 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 		function parseKinematicsAttachment( xml ) {
 
 			var data = {
-				joint: getDataByElement( xml, 'attribute', 'joint').split( '/' ).pop(),
+				joint: xml.getAttribute( 'joint' ).split( '/' ).pop(),
 				transforms: [],
 				links: []
 			};
 
-			var index = 0, element;
+			for ( var i = 0; i < xml.childNodes.length; i ++ ) {
 
-			function getData( name ) {
+				var child = xml.childNodes[ i ];
 
-				index = 0;
+				if ( child.nodeType !== 1 ) continue;
 
-				while ( true ) {
+				switch ( child.nodeName ) {
 
-					element = getElementByTag( name, false, index, xml );
-
-					if ( element ) {
-
-						switch ( name ) {
-
-							case 'link':
-								data.links.push( parseKinematicsLink( element ) );
-								break;
-
-							case 'matrix':
-							case 'translate':
-							case 'rotate':
-								data.transforms.push( parseKinematicsTransform( element ) );
-								break;
-
-						}
-
-						index++;
-
-					} else {
+					case 'link':
+						data.links.push( parseKinematicsLink( child ) );
 						break;
-					}
+
+					case 'matrix':
+					case 'translate':
+					case 'rotate':
+						data.transforms.push( parseKinematicsTransform( child ) );
+						break;
 
 				}
 
 			}
-
-			getData( 'link' );
-			getData( 'matrix' );
-			getData( 'translate' );
-			getData( 'rotate' );
 
 			return data;
 
@@ -3424,10 +2424,10 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 		function parseKinematicsTransform( xml ) {
 
 			var data = {
-				type: getDataByElement( xml, 'name' )
+				type: xml.nodeName
 			};
 
-			var array = parseFloats( getDataByElement( xml, 'content' ) );
+			var array = parseFloats( xml.textContent );
 
 			switch ( data.type ) {
 
@@ -3459,49 +2459,47 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 				bindJointAxis: []
 			};
 
-			var index = 0, element;
+			for ( var i = 0; i < xml.childNodes.length; i ++ ) {
 
-			while ( true ) {
+				var child = xml.childNodes[ i ];
 
-				element = getElementByTag( 'bind_joint_axis', false, index, xml );
+				if ( child.nodeType !== 1 ) continue;
 
-				if ( element ) {
+				switch ( child.nodeName ) {
 
-					data.bindJointAxis.push( parseKinematicsBindJointAxis( element ) );
-					index++;
+					case 'bind_joint_axis':
+						data.bindJointAxis.push( parseKinematicsBindJointAxis( child ) );
+						break;
 
-				} else {
-					break;
 				}
 
 			}
 
-			library.kinematicsScenes[ parseId( getDataByElement( xml, 'attribute', 'url' ) ) ] = data;
+			library.kinematicsScenes[ parseId( xml.getAttribute( 'url' ) ) ] = data;
 
 		}
 
 		function parseKinematicsBindJointAxis( xml ) {
 
 			var data = {
-				target: getDataByElement( xml, 'attribute', 'target' ).split( '/' ).pop()
+				target: xml.getAttribute( 'target' ).split( '/' ).pop()
 			};
 
-			var index = 0, element;
+			for ( var i = 0; i < xml.childNodes.length; i ++ ) {
 
-			while ( true ) {
+				var child = xml.childNodes[ i ];
 
-				element = getElementByTag( 'axis', false, index, xml );
+				if ( child.nodeType !== 1 ) continue;
 
-				if ( element ) {
+				switch ( child.nodeName ) {
 
-					var param = getElementByTag( 'param', false, 0, element );
-					data.axis = getDataByElement( param, 'content' );
-					var tmpJointIndex = data.axis.split( 'inst_' ).pop().split( 'axis' )[ 0 ];
-					data.jointIndex = tmpJointIndex.substr( 0, tmpJointIndex.length - 1 );
-					index++;
+					case 'axis':
+						var param = child.getElementsByTagName( 'param' )[ 0 ];
+						data.axis = param.textContent;
+						var tmpJointIndex = data.axis.split( 'inst_' ).pop().split( 'axis' )[ 0 ];
+						data.jointIndex = tmpJointIndex.substr( 0, tmpJointIndex.length - 1 );
+						break;
 
-				} else {
-					break;
 				}
 
 			}
@@ -3759,53 +2757,21 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 
 		function prepareNodes( xml ) {
 
-			var index = 0, element, index1 = 0, element1;
+			var elements = xml.getElementsByTagName( 'node' );
 
-			while ( true ) {
+			// ensure all node elements have id attributes
 
-				element = getElementByTag( 'node', true, index, xml );
+			for ( var i = 0; i < elements.length; i ++ ) {
 
-				if ( element ) {
+				var element = elements[ i ];
 
-					if ( ! getDataByElement( element, 'attribute', 'id' ) ) {
+				if ( element.hasAttribute( 'id' ) === false ) {
 
-						element = setDataByElement( element, 'attribute', { key: 'id', value: generateId() } );
-						xml = replaceElementByTag( 'node', index, element, xml );
+					element.setAttribute( 'id', generateId() );
 
-					}
-
-					index1 = 0;
-
-					while( true ) {
-
-						element1 = getElementByTag( 'node', true, index1, element );
-						if ( element1 ) {
-
-							if ( ! getDataByElement( element1, 'attribute', 'id' ) ) {
-
-								element1 = setDataByElement( element1, 'attribute', { key: 'id', value: generateId() } );
-								element = replaceElementByTag( 'node', index1, element1, element );
-								xml = replaceElementByTag( 'node', index, element, xml );
-
-							}
-
-							index1++;
-
-						} else {
-							break;
-						}
-
-					}
-
-					index++;
-
-				} else {
-					break;
 				}
 
 			}
-
-			return xml;
 
 		}
 
@@ -3815,10 +2781,10 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 		function parseNode( xml ) {
 
 			var data = {
-				name: getDataByElement( xml, 'attribute', 'name' ) || '',
-				type: getDataByElement( xml, 'attribute', 'type' ),
-				id: getDataByElement( xml, 'attribute', 'id' ),
-				sid: getDataByElement( xml, 'attribute', 'sid' ),
+				name: xml.getAttribute( 'name' ) || '',
+				type: xml.getAttribute( 'type' ),
+				id: xml.getAttribute( 'id' ),
+				sid: xml.getAttribute( 'sid' ),
 				matrix: new THREE.Matrix4(),
 				nodes: [],
 				instanceCameras: [],
@@ -3829,103 +2795,76 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 				transforms: {}
 			};
 
-			var index = 0, element;
+			for ( var i = 0; i < xml.childNodes.length; i ++ ) {
 
-			function getData( name ) {
+				var child = xml.childNodes[ i ];
 
-				index = 0;
+				if ( child.nodeType !== 1 ) continue;
 
-				while ( true ) {
+				switch ( child.nodeName ) {
 
-					element = getElementByTag( name, true, index, xml );
-
-					if ( element ) {
-
-						switch ( name ) {
-
-							case 'node':
-								data.nodes.push( getDataByElement( element, 'attribute', 'id' ) );
-								parseNode( element );
-								break;
-
-							case 'instance_camera':
-								data.instanceCameras.push( parseId( getDataByElement( element, 'attribute', 'url' ) ) );
-								break;
-
-							case 'instance_controller':
-								data.instanceControllers.push( parseNodeInstance( element ) );
-								break;
-
-							case 'instance_light':
-								data.instanceLights.push( parseId( getDataByElement( element, 'attribute', 'url' ) ) );
-								break;
-
-							case 'instance_geometry':
-								data.instanceGeometries.push( parseNodeInstance( element ) );
-								break;
-
-							case 'instance_node':
-								data.instanceNodes.push( parseId( getDataByElement( element, 'attribute', 'url' ) ) );
-								break;
-
-							case 'matrix':
-								var array = parseFloats( getDataByElement( element, 'content', 'url' ) );
-								data.matrix.multiply( matrix.fromArray( array ).transpose() );
-								data.transforms[ getDataByElement( element, 'attribute', 'sid' ) ] = name;
-								break;
-
-							case 'translate':
-								var array = parseFloats( getDataByElement( element, 'content', 'url' ) );
-								vector.fromArray( array );
-								data.matrix.multiply( matrix.makeTranslation( vector.x, vector.y, vector.z ) );
-								data.transforms[ getDataByElement( element, 'attribute', 'sid' ) ] = name;
-								break;
-
-							case 'rotate':
-								var array = parseFloats( getDataByElement( element, 'content', 'url' ) );
-								var angle = THREE.Math.degToRad( array[ 3 ] );
-								data.matrix.multiply( matrix.makeRotationAxis( vector.fromArray( array ), angle ) );
-								data.transforms[ getDataByElement( element, 'attribute', 'sid' ) ] = name;
-								break;
-
-							case 'scale':
-								var array = parseFloats( getDataByElement( element, 'content', 'url' ) );
-								data.matrix.scale( vector.fromArray( array ) );
-								data.transforms[ getDataByElement( element, 'attribute', 'sid' ) ] = name;
-								break;
-
-							case 'extra':
-								break;
-
-							default:
-								console.log( child );
-
-						}
-
-						index++;
-
-					} else {
+					case 'node':
+						data.nodes.push( child.getAttribute( 'id' ) );
+						parseNode( child );
 						break;
-					}
+
+					case 'instance_camera':
+						data.instanceCameras.push( parseId( child.getAttribute( 'url' ) ) );
+						break;
+
+					case 'instance_controller':
+						data.instanceControllers.push( parseNodeInstance( child ) );
+						break;
+
+					case 'instance_light':
+						data.instanceLights.push( parseId( child.getAttribute( 'url' ) ) );
+						break;
+
+					case 'instance_geometry':
+						data.instanceGeometries.push( parseNodeInstance( child ) );
+						break;
+
+					case 'instance_node':
+						data.instanceNodes.push( parseId( child.getAttribute( 'url' ) ) );
+						break;
+
+					case 'matrix':
+						var array = parseFloats( child.textContent );
+						data.matrix.multiply( matrix.fromArray( array ).transpose() );
+						data.transforms[ child.getAttribute( 'sid' ) ] = child.nodeName;
+						break;
+
+					case 'translate':
+						var array = parseFloats( child.textContent );
+						vector.fromArray( array );
+						data.matrix.multiply( matrix.makeTranslation( vector.x, vector.y, vector.z ) );
+						data.transforms[ child.getAttribute( 'sid' ) ] = child.nodeName;
+						break;
+
+					case 'rotate':
+						var array = parseFloats( child.textContent );
+						var angle = THREE.Math.degToRad( array[ 3 ] );
+						data.matrix.multiply( matrix.makeRotationAxis( vector.fromArray( array ), angle ) );
+						data.transforms[ child.getAttribute( 'sid' ) ] = child.nodeName;
+						break;
+
+					case 'scale':
+						var array = parseFloats( child.textContent );
+						data.matrix.scale( vector.fromArray( array ) );
+						data.transforms[ child.getAttribute( 'sid' ) ] = child.nodeName;
+						break;
+
+					case 'extra':
+						break;
+
+					default:
+						console.log( child );
 
 				}
 
 			}
 
-			getData( 'node' );
-			getData( 'instance_camera' );
-			getData( 'instance_controller' );
-			getData( 'instance_light' );
-			getData( 'instance_geometry' );
-			getData( 'instance_node' );
-			getData( 'matrix' );
-			getData( 'translate' );
-			getData( 'rotate' );
-			getData( 'scale' );
-			getData( 'extra' );
-
 			library.nodes[ data.id ] = data;
-			console.log( '解析模型：' + data.id );
 
 			return data;
 
@@ -3934,65 +2873,42 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 		function parseNodeInstance( xml ) {
 
 			var data = {
-				id: parseId( getDataByElement( xml, 'attribute', 'url' ) ),
+				id: parseId( xml.getAttribute( 'url' ) ),
 				materials: {},
 				skeletons: []
 			};
 
-			var index = 0, element;
+			for ( var i = 0; i < xml.childNodes.length; i ++ ) {
 
-			function getData( name ) {
+				var child = xml.childNodes[ i ];
 
-				index = 0;
+				switch ( child.nodeName ) {
 
-				while ( true ) {
+					case 'bind_material':
+						var instances = child.getElementsByTagName( 'instance_material' );
 
-					element = getElementByTag( name, true, index, xml );
+						for ( var j = 0; j < instances.length; j ++ ) {
 
-					if ( element ) {
+							var instance = instances[ j ];
+							var symbol = instance.getAttribute( 'symbol' );
+							var target = instance.getAttribute( 'target' );
 
-						switch ( name ) {
-
-							case 'bind_material':
-								var index1 = 0, instance, instance1;
-								instance = getElementByTag( 'technique_common', true, 0, element );
-								if ( ! instance ) break;
-
-								while ( true ) {
-
-									instance1 = getElementByTag( 'instance_material', true, index1, instance );
-									if ( instance1 ) {
-										data.materials[ getDataByElement( instance1, 'attribute', 'symbol' ) ] = parseId( getDataByElement( instance1, 'attribute', 'target' ) );
-										index1++;
-									} else {
-										break;
-									}
-
-								}
-
-								break;
-
-							case 'skeleton':
-								data.skeletons.push( parseId( getDataByElement( instance, 'content', 'symbol' ) ) );
-								break;
-
-							default:
-								break;
+							data.materials[ symbol ] = parseId( target );
 
 						}
 
-						index++;
-
-					} else {
 						break;
-					}
+
+					case 'skeleton':
+						data.skeletons.push( parseId( child.textContent ) );
+						break;
+
+					default:
+						break;
 
 				}
 
 			}
-
-			getData( 'bind_material' );
-			getData( 'skeleton' );
 
 			return data;
 
@@ -4358,30 +3274,21 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 		function parseVisualScene( xml ) {
 
 			var data = {
-				name: getDataByElement( xml, 'attribute', 'name' ) || '',
+				name: xml.getAttribute( 'name' ),
 				children: []
 			};
 
-			xml = prepareNodes( xml );
+			prepareNodes( xml );
 
-			var index = 0, element;
+			var elements = getElementsByTagName( xml, 'node' );
 
-			while ( true ) {
+			for ( var i = 0; i < elements.length; i ++ ) {
 
-				element = getElementByTag( 'node', true, index, xml );
-
-				if ( element ) {
-
-					data.children.push( parseNode( element ) );
-					index++;
-
-				} else {
-					break;
-				}
+				data.children.push( parseNode( elements[ i ] ) );
 
 			}
 
-			library.visualScenes[ getDataByElement( xml, 'attribute', 'id' ) ] = data;
+			library.visualScenes[ xml.getAttribute( 'id' ) ] = data;
 
 		}
 
@@ -4424,8 +3331,8 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 
 		function parseScene( xml ) {
 
-			var instance = getElementByTag( 'instance_visual_scene', true, 0, xml );
-			return getVisualScene( parseId( getDataByElement( instance, 'attribute', 'url' ) ) );
+			var instance = getElementsByTagName( xml, 'instance_visual_scene' )[ 0 ];
+			return getVisualScene( parseId( instance.getAttribute( 'url' ) ) );
 
 		}
 
@@ -4477,12 +3384,20 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 
 		}
 
+		console.time( 'THREE.ColladaLoader: DOMParser' );
+
+		var xml = new DOMParser().parseFromString( text, 'application/xml' );
+
+		console.timeEnd( 'THREE.ColladaLoader: DOMParser' );
+
+		var collada = getElementsByTagName( xml, 'COLLADA' )[ 0 ];
+
 		// metadata
 
-		var version = text.match( /version\=\".*\"\>/ )[ 0 ].slice( 9, -2 );
+		var version = collada.getAttribute( 'version' );
 		console.log( 'THREE.ColladaLoader: File version', version );
 
-		var asset = parseAsset( getElementByTag( 'asset', true, 0 ) );
+		var asset = parseAsset( getElementsByTagName( collada, 'asset' )[ 0 ] );
 		var textureLoader = new THREE.TextureLoader( this.manager );
 		textureLoader.setPath( path ).setCrossOrigin( this.crossOrigin );
 
@@ -4512,129 +3427,58 @@ splitElementByMark('gg', '<gg', 4, '<ll> <gg 1></gg> <gg 2></gg> <gg 3> </gg> </
 
 		console.time( 'THREE.ColladaLoader: Parse' );
 
-		console.log( '1/13 parse library_animations' );
-		parseLibrary( 'library_animations', 'animation', parseAnimation );
-
-		console.log( '2/13 parse library_animation_clips' );
-		parseLibrary( 'library_animation_clips', 'animation_clip', parseAnimationClip );
-
-		console.log( '3/13 parse library_controllers' );
-		parseLibrary( 'library_controllers', 'controller', parseController );
-
-		console.log( '4/13 parse library_images' );
-		parseLibrary( 'library_images', 'image', parseImage );
-
-		console.log( '5/13 parse library_effects' );
-		parseLibrary( 'library_effects', 'effect', parseEffect );
-
-		console.log( '6/13 parse library_materials' );
-		parseLibrary( 'library_materials', 'material', parseMaterial );
-
-		console.log( '7/13 parse library_cameras' );
-		parseLibrary( 'library_cameras', 'camera', parseCamera );
-
-		console.log( '8/13 parse library_lights' );
-		parseLibrary( 'library_lights', 'light', parseLight );
-
-		var geometryArr = splitElementByMark( 'library_geometries', '<geometry', 4 ),
-			geometryArrLen = geometryArr.length,
-			geometryWorker = [], geometryWorkerReturn = [];
-		console.log( 'geometryArr:', geometryArr );
-
-		if ( window.Worker && geometryArrLen === 4 ) {
-
-			for ( var i = 0; i < geometryArrLen; i++ ) {
-
-				geometryWorker[ i ] = new Worker( 'common/js/loaders/ColladaLoaderGeometry.js' );
-				geometryWorker[ i ].postMessage( geometryArr[i] );
-				geometryWorker[ i ].onmessage = function ( e ) {
-
-					console.log( 'main get geometries' );
-					$.extend( library.geometries, e.data );
-					geometryWorkerReturn.push( true );
-
-				}
-
-			}
-
-			geometryArr = [];
-
-		} else {
-
-			console.log( '9/13 parse library_geometries' );
-			parseLibrary( 'library_geometries', 'geometry', parseGeometry );
-
-		}
-
-		console.log( '10/13 parse library_nodes' );
-		parseLibrary( 'library_nodes', 'node', parseNode );
-
-		console.log( '11/13 parse library_visual_scenes' );
-		parseLibrary( 'library_visual_scenes', 'visual_scene', parseVisualScene );
-
-		console.log( '12/13 parse library_kinematics_models' );
-		parseLibrary( 'library_kinematics_models', 'kinematics_model', parseKinematicsModel );
-
-		console.log( '13/13 parse scene' );
-		parseLibrary( 'scene', 'instance_kinematics_scene', parseKinematicsScene );
+		parseLibrary( collada, 'library_animations', 'animation', parseAnimation );
+		parseLibrary( collada, 'library_animation_clips', 'animation_clip', parseAnimationClip );
+		parseLibrary( collada, 'library_controllers', 'controller', parseController );
+		parseLibrary( collada, 'library_images', 'image', parseImage );
+		parseLibrary( collada, 'library_effects', 'effect', parseEffect );
+		parseLibrary( collada, 'library_materials', 'material', parseMaterial );
+		parseLibrary( collada, 'library_cameras', 'camera', parseCamera );
+		parseLibrary( collada, 'library_lights', 'light', parseLight );
+		parseLibrary( collada, 'library_geometries', 'geometry', parseGeometry );
+		parseLibrary( collada, 'library_nodes', 'node', parseNode );
+		parseLibrary( collada, 'library_visual_scenes', 'visual_scene', parseVisualScene );
+		parseLibrary( collada, 'library_kinematics_models', 'kinematics_model', parseKinematicsModel );
+		parseLibrary( collada, 'scene', 'instance_kinematics_scene', parseKinematicsScene );
 
 		console.timeEnd( 'THREE.ColladaLoader: Parse' );
 
-		//
+		console.time( 'THREE.ColladaLoader: Build' );
 
-		var timeout = setTimeout( runData, 100 );
+		buildLibrary( library.animations, buildAnimation );
+		buildLibrary( library.clips, buildAnimationClip );
+		buildLibrary( library.controllers, buildController );
+		buildLibrary( library.images, buildImage );
+		buildLibrary( library.effects, buildEffect );
+		buildLibrary( library.materials, buildMaterial );
+		buildLibrary( library.cameras, buildCamera );
+		buildLibrary( library.lights, buildLight );
+		buildLibrary( library.geometries, buildGeometry );
+		buildLibrary( library.visualScenes, buildVisualScene );
 
-		function runData () {
+		console.timeEnd( 'THREE.ColladaLoader: Build' );
 
-			clearTimeout( timeout );
+		setupAnimations();
+		setupKinematics();
 
-			if ( geometryArrLen === 4 && window.Worker && geometryWorkerReturn.length < geometryArrLen ) {
+		var scene = parseScene( getElementsByTagName( collada, 'scene' )[ 0 ] );
 
-				timeout = setTimeout( runData, 100 );
-				return;
+		if ( asset.upAxis === 'Z_UP' ) {
 
-			}
-
-			console.log( 'library:', library );
-			console.time( 'THREE.ColladaLoader: Build' );
-
-			buildLibrary( library.animations, buildAnimation );
-			buildLibrary( library.clips, buildAnimationClip );
-			buildLibrary( library.controllers, buildController );
-			buildLibrary( library.images, buildImage );
-			buildLibrary( library.effects, buildEffect );
-			buildLibrary( library.materials, buildMaterial );
-			buildLibrary( library.cameras, buildCamera );
-			buildLibrary( library.lights, buildLight );
-			buildLibrary( library.geometries, buildGeometry );
-			buildLibrary( library.visualScenes, buildVisualScene );
-
-			console.timeEnd( 'THREE.ColladaLoader: Build' );
-
-			setupAnimations();
-			setupKinematics();
-
-			var scene = parseScene( getElementByTag( 'scene', true, 0 ) );
-
-			if ( asset.upAxis === 'Z_UP' ) {
-
-				scene.rotation.x = - Math.PI / 2;
-
-			}
-
-			scene.scale.multiplyScalar( asset.unit );
-
-			console.timeEnd( 'THREE.ColladaLoader' );
-
-			// return {
-			// 	animations: animations,
-			// 	kinematics: kinematics,
-			// 	library: library,
-			// 	scene: scene
-			// };
-			runScene( scene );
+			scene.rotation.x = - Math.PI / 2;
 
 		}
+
+		scene.scale.multiplyScalar( asset.unit );
+
+		console.timeEnd( 'THREE.ColladaLoader' );
+
+		return {
+			animations: animations,
+			kinematics: kinematics,
+			library: library,
+			scene: scene
+		};
 
 	}
 

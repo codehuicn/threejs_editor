@@ -6,6 +6,7 @@ var Loader = function ( editor ) {
 
 	var scope = this;
 	var signals = editor.signals;
+	var objectHelper = new ObjectHelper();
 
 	this.texturePath = '';
 
@@ -142,14 +143,13 @@ var Loader = function ( editor ) {
 					var contents = event.target.result;
 
 					var loader = new THREE.ColladaLoader();
-					var collada = loader.parse( contents );
+					var collada = loader.parse( contents, 'dae/', function ( scene ) {
 
-					collada.scene.name = filename;
+						scene.name = filename;
+						scene = objectHelper.mergeObjectByType( scene, objectHelper );
+						editor.execute( new AddObjectCommand( scene ) );
 
-					var camera = collada.scene.getObjectByProperty( 'type', 'PerspectiveCamera' );
-					camera.parent.remove( camera );
-
-					editor.execute( new AddObjectCommand( collada.scene ) );
+					} );
 
 				}, false );
 				reader.readAsText( file );

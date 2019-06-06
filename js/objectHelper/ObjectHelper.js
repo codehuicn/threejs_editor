@@ -73,6 +73,34 @@
  * * `sceneHelpers` 辅助模型的场景
  * * 3 返回：
  * * 无
+ *
+ * #### 合并模型
+ * 按照模型的类型进行合并，排除了 `Group` 类型
+ * * 1 使用方式：
+ * * `objectHelper.mergeObjectByType( obj, refer );`
+ * * 2 参数：
+ * * `obj` 一个大模型；`refer` 函数引用，包含 `mergeObjects` 和 `mergeBufferGeometry`
+ * * 3 返回：
+ * * 包含合并模型的单个模型
+ *
+ * #### 合并某个类型的所有模型
+ * 对某个类型的所有模型合并，模型类型取决于第一个模型
+ * * 1 使用方式：
+ * * `objectHelper.mergeObjects( objs, refer );`
+ * * 2 参数：
+ * * `objs` 模型数组；`refer` 函数引用，包含 `mergeBufferGeometry`
+ * * 3 返回：
+ * * 一个模型
+ *
+ * #### 合并几何体
+ * 把第二个几何体合并到第一个几何体中
+ * * 1 使用方式：
+ * * `objectHelper.mergeBufferGeometry( geometry1, offset, geometry2, start, count );`
+ * * 2 参数：
+ * * `geometry1` 几何体；`offset` 第一个几何体的偏移；`geometry2` 几何体；`start` 第二个几何体的开始位置；
+ * `count` 第二个几何体的合并数量
+ * * 3 返回：
+ * * 合并后的几何体
  */
 
 var ObjectHelper = function () {
@@ -324,5 +352,259 @@ ObjectHelper.prototype.clearObjectHelper = function ( sceneHelpers ) {
         }
 
     }
+
+}
+
+ObjectHelper.prototype.mergeObjectByType = function ( obj, refer ) {
+
+    if ( ! obj || ! refer || ! refer.mergeObjects || ! refer.mergeBufferGeometry ) return null;
+    console.time( '合并模型 ' + obj.name );
+
+    var objAll, objCopy, matrixTemp;
+    objAll = {
+        'Mesh': [],
+        'SkinnedMesh': [],
+        'Line': [],
+        'LineSegments': [],
+        'other': []
+    };
+
+    obj.updateMatrixWorld( true );
+    obj.traverse( function ( child ) {
+
+        objCopy = child.clone( false );
+        matrixTemp = objCopy.matrix.clone();
+        matrixTemp.getInverse( matrixTemp.clone() );
+        objCopy.applyMatrix( matrixTemp.clone() );
+        objCopy.applyMatrix( child.matrixWorld.clone() );
+
+        if ( child.type === 'Mesh' ) {
+
+            objCopy.name = '[已合并Mesh] ' + objCopy.name;
+            objAll[ child.type ].push( objCopy );
+
+        } else if ( child.type === 'SkinnedMesh' ) {
+
+            objCopy.name = '[已合并SkinnedMesh] ' + objCopy.name;
+            objAll[ child.type ].push( objCopy );
+
+        } else if ( child.type === 'Line' ) {
+
+            objCopy.name = '[已合并Line] ' + objCopy.name;
+            objAll[ child.type ].push( objCopy );
+
+        } else if ( child.type === 'LineSegments' ) {
+
+            objCopy.name = '[已合并LineSegments] ' + objCopy.name;
+            objAll[ child.type ].push( objCopy );
+
+        } else if ( child.type !== 'Group' ) {
+
+            objCopy.name = '[未合并] ' + objCopy.name;
+            objAll[ 'other' ].push( objCopy );
+
+        }
+
+    } );
+
+    var group = new THREE.Group();
+
+    for ( var type in objAll ) {
+
+        if ( objAll[ type ].length < 1 ) continue;
+
+        if ( type === 'other' ) {
+
+            for ( var i = 0, l = objAll[ type ].length; i < l; i++ ) {
+                group.add( objAll[ type ][ i ] );
+            }
+
+        } else {
+
+            objCopy = refer.mergeObjects( objAll[ type ], refer );
+            objCopy.name = objAll[ type ][ 0 ][ 'name' ];
+            $.extend( objCopy.userData, objAll[ type ][ 0 ][ 'userData' ] );
+            group.add( objCopy );
+
+        }
+
+    }
+
+    group.name = obj.name;
+    $.extend( group.userData, obj.userData );
+    console.timeEnd( '合并模型 ' + obj.name );
+
+    return group;
+
+}
+
+ObjectHelper.prototype.mergeObjects = function ( objs, refer ) {
+
+    if ( ! objs || objs.length < 1 || ! refer || ! refer.mergeBufferGeometry ) return null;
+
+    var type = objs[ 0 ].type, geometries = [], materials = {}, materialsArr = [],
+        groups, materialTemp, geometryTemp, count = 0, countTemp = 0, startTemp,
+        uvAttr = false, vertices, uvs, geometry = new THREE.BufferGeometry(),
+        geometry2, midNow;
+
+    for ( var i = 0, l = objs.length; i < l; i++ ) {
+
+        materialTemp = objs[ i ].material;
+        geometryTemp = objs[ i ].geometry.clone();
+        geometryTemp.applyMatrix( objs[ i ].matrix.clone() );
+        objs[ i ].geometry.dispose();
+
+        if ( geometryTemp.vertices ) {
+
+            countTemp = geometryTemp.vertices.length;
+            if ( objs[i].geometry.faceVertexUvs ) uvAttr = true;
+
+        } else {
+
+            countTemp = geometryTemp.attributes.position.count;
+            if ( objs[i].geometry.attributes.uv ) uvAttr = true;
+
+        }
+
+        if ( geometryTemp.groups.length === 0 ) {
+
+            geometries.push( {
+                geo: geometryTemp,
+                start: 0,
+                count: countTemp,
+                mid: materialTemp.id
+            } );
+
+            count += countTemp;
+
+        } else {
+
+            groups = geometryTemp.groups;
+            for ( var j = 0, jl = groups.length; j < jl; j++ ) {
+
+                geometries.push( {
+                    geo: geometryTemp,
+                    start: groups[ j ].start,
+                    count: groups[ j ].count,
+                    mid: materialTemp.id ? materialTemp.id : materialTemp[ groups[ j ].materialIndex ].id
+                } );
+
+                count += groups[ j ].count;
+
+            }
+
+        }
+
+        if ( materialTemp.id ) {
+
+            materials[ materialTemp.id ] = materialTemp;
+
+            materialTemp.side = THREE.DoubleSide;
+            if ( materialTemp.transparent && materialTemp.opacity === 1 ) materialTemp.opacity = 0.6;
+
+        } else {
+
+            for ( var j = 0, jl = materialTemp.length; j < jl; j++ ) {
+
+                materials[ materialTemp[ j ].id ] = materialTemp[ j ];
+
+                materialTemp[ j ].side = THREE.DoubleSide;
+                if ( materialTemp[ j ].transparent && materialTemp[ j ].opacity === 1 ) materialTemp[ j ].opacity = 0.6;
+
+            }
+
+        }
+
+    }
+
+    vertices = new Float32Array( count * 3 );
+    uvs = new Float32Array( count * 2 );
+    geometry.addAttribute( 'position', new THREE.BufferAttribute( vertices, 3 ) );
+    if ( uvAttr ) geometry.addAttribute( 'uv', new THREE.BufferAttribute( uvs, 2 ) );
+    geometry.computeVertexNormals();
+    geometry2 = geometry.clone();
+    count = 0;
+
+    while ( geometries.length > 0 ) {
+
+        midNow = geometries[ 0 ].mid;
+        startTemp = count;
+        countTemp = 0;
+
+        for ( var i = 0, l = geometries.length; i < l; i++ ) {
+
+            if ( geometries[ i ].mid === midNow ) {
+
+                if ( geometries[ i ].geo.isBufferGeometry ) {
+                    refer.mergeBufferGeometry( geometry, count, geometries[ i ].geo, geometries[ i ].start, geometries[ i ].count );
+                } else {
+
+                    geometry2.fromGeometry( geometries[ i ].geo );
+                    refer.mergeBufferGeometry( geometry, count, geometry2, geometries[ i ].start, geometries[ i ].count );
+
+                }
+
+                count += geometries[ i ].count;
+                countTemp += geometries[ i ].count;
+
+                geometries[ i ].geo.dispose();
+                geometries.splice( i, 1 );
+                i--;
+                l--;
+
+            }
+
+        }
+
+        console.log( '合并模型：', materials[ midNow ].name );
+        materialsArr.push( materials[ midNow ] );
+        materials[ midNow ] = materialsArr.length - 1;
+
+        geometry.addGroup(
+            startTemp,
+            countTemp,
+            materials[ midNow ]
+        );
+
+    }
+
+    if ( materialsArr.length === 1 ) return new THREE[ type ]( geometry, materialsArr[ 0 ] );
+    return new THREE[ type ]( geometry, materialsArr );
+
+}
+
+ObjectHelper.prototype.mergeBufferGeometry = function ( geometry1, offset, geometry2, start, count ) {
+
+    if (
+        ! geometry1 || ! geometry1.isBufferGeometry || ! geometry2 || ! geometry2.isBufferGeometry
+        || offset < 0 || start < 0 || count < 0
+    ) return null;
+
+    var attributes1 = geometry1.attributes, attributes2 = geometry2.attributes,
+        attribute1, attributeArray1, attribute2, attributeArray2, attributeOffset, length,
+        attributeStart, attributeCount;
+
+    for ( var key in attributes1 ) {
+
+        if ( attributes2[ key ] === undefined ) continue;
+
+        attribute1 = attributes1[ key ];
+        attributeArray1 = attribute1.array;
+        attribute2 = attributes2[ key ];
+        attributeArray2 = attribute2.array;
+
+        attributeOffset = attribute1.itemSize * offset;
+        attributeStart = attribute2.itemSize * start;
+        attributeCount = attribute2.itemSize * count;
+
+        length = Math.min( attributeCount, attributeArray1.length - attributeOffset );
+
+        for ( var i = attributeStart, j = attributeOffset; i < length; i ++, j ++ ) {
+            attributeArray1[ j ] = attributeArray2[ i ];
+        }
+
+    }
+
+    return geometry1;
 
 }
