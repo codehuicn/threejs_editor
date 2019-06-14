@@ -599,7 +599,7 @@ ObjectHelper.prototype.mergeBufferGeometry = function ( geometry1, offset, geome
 
         length = Math.min( attributeCount, attributeArray1.length - attributeOffset );
 
-        for ( var i = attributeStart, j = attributeOffset; i < length; i ++, j ++ ) {
+        for ( var i = attributeStart, j = attributeOffset, z = 0; z < length; i ++, j ++, z ++ ) {
             attributeArray1[ j ] = attributeArray2[ i ];
         }
 
