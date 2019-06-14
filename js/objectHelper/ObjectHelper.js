@@ -446,6 +446,9 @@ ObjectHelper.prototype.mergeObjects = function ( objs, refer ) {
         groups, materialTemp, geometryTemp, count = 0, countTemp = 0, startTemp,
         uvAttr = false, vertices, uvs, geometry = new THREE.BufferGeometry(),
         geometry2, midNow;
+    
+    if ( type === 'Mesh' || type === 'SkinnedMesh' ) 
+    materialsArr.push( new THREE.MeshBasicMaterial( { side: THREE.BackSide, name: '默认背面材质' } ) );
 
     for ( var i = 0, l = objs.length; i < l; i++ ) {
 
@@ -499,8 +502,12 @@ ObjectHelper.prototype.mergeObjects = function ( objs, refer ) {
 
             materials[ materialTemp.id ] = materialTemp;
 
-            materialTemp.side = THREE.DoubleSide;
-            if ( materialTemp.transparent && materialTemp.opacity === 1 ) materialTemp.opacity = 0.6;
+            if ( materialTemp.transparent ) {
+
+                materialTemp.side = THREE.DoubleSide;
+                if ( materialTemp.opacity === 1 ) materialTemp.opacity = 0.6;
+                
+            }
 
         } else {
 
@@ -508,9 +515,13 @@ ObjectHelper.prototype.mergeObjects = function ( objs, refer ) {
 
                 materials[ materialTemp[ j ].id ] = materialTemp[ j ];
 
-                materialTemp[ j ].side = THREE.DoubleSide;
-                if ( materialTemp[ j ].transparent && materialTemp[ j ].opacity === 1 ) materialTemp[ j ].opacity = 0.6;
+                if ( materialTemp[ j ].transparent ) {
 
+                    materialTemp[ j ].side = THREE.DoubleSide;
+                    if ( materialTemp[ j ].opacity === 1 ) materialTemp[ j ].opacity = 0.6;
+                    
+                }
+                
             }
 
         }
@@ -555,6 +566,17 @@ ObjectHelper.prototype.mergeObjects = function ( objs, refer ) {
             }
 
         }
+        
+        if ( type === 'Mesh' || type === 'SkinnedMesh' ) {
+
+            if ( ! materials[ midNow ].transparent )
+            geometry.addGroup(
+                startTemp,
+                countTemp,
+                0
+            );
+            
+        }
 
         console.log( '合并模型：', materials[ midNow ].name );
         materialsArr.push( materials[ midNow ] );
@@ -568,8 +590,15 @@ ObjectHelper.prototype.mergeObjects = function ( objs, refer ) {
 
     }
 
-    if ( materialsArr.length === 1 ) return new THREE[ type ]( geometry, materialsArr[ 0 ] );
-    return new THREE[ type ]( geometry, materialsArr );
+    var obj;
+
+    if ( materialsArr.length === 1 ) {
+        obj = new THREE[ type ]( geometry, materialsArr[ 0 ] );
+    } else {
+        obj = new THREE[ type ]( geometry, materialsArr );
+    }
+
+    return obj;
 
 }
 
