@@ -314,8 +314,8 @@ Menubar.Add = function ( editor ) {
 	option.setTextContent( 'HemisphereLight' );
 	option.onClick( function () {
 
-		var skyColor = 0x6a6a6a;
-		var groundColor = 0x2f2f2f;
+		var skyColor = 0xffffff;
+		var groundColor = 0x555555;
 		var intensity = 1;
 
 		var light = new THREE.HemisphereLight( skyColor, groundColor, intensity );
